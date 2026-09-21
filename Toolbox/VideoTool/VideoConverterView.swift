@@ -5,28 +5,23 @@ struct VideoConverterView: View {
     @StateObject private var model = VideoConverterViewModel()
     @State private var presetName = ""
     @State private var showingPresetName = false
+    @State private var isInspectorVisible = true
 
     var body: some View {
-        HSplitView {
-            VStack(spacing: 0) {
-                header
-                Divider()
-                fileArea
-                Divider()
-                footer
-            }
-            .frame(minWidth: 480)
+        GeometryReader { proxy in
+            HStack(spacing: 0) {
+                mainPanel
+                    .frame(minWidth: 500, maxWidth: .infinity, maxHeight: .infinity)
 
-            PresetEditorView(
-                preset: $model.selectedPreset,
-                presets: model.presetStore.allPresets,
-                selectPreset: model.selectPreset,
-                savePreset: { showingPresetName = true },
-                updatePreset: model.updateSelectedPreset,
-                deletePreset: model.deleteSelectedPreset
-            )
-            .frame(minWidth: 320, idealWidth: 360, maxWidth: 440)
+                if isInspectorVisible {
+                    Divider()
+                    inspector
+                        .frame(width: inspectorWidth(for: proxy.size.width))
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                }
+            }
         }
+        .animation(.easeInOut(duration: 0.18), value: isInspectorVisible)
         .alert("转换错误", isPresented: Binding(
             get: { model.presentedError != nil },
             set: { if !$0 { model.presentedError = nil } }
@@ -56,8 +51,30 @@ struct VideoConverterView: View {
         }
     }
 
+    private var mainPanel: some View {
+        VStack(spacing: 0) {
+            header
+            Divider()
+            fileArea
+            Divider()
+            footer
+        }
+    }
+
+    private var inspector: some View {
+        PresetEditorView(
+            preset: $model.selectedPreset,
+            presets: model.presetStore.allPresets,
+            selectPreset: model.selectPreset,
+            savePreset: { showingPresetName = true },
+            updatePreset: model.updateSelectedPreset,
+            deletePreset: model.deleteSelectedPreset
+        )
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+
     private var header: some View {
-        HStack {
+        HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("视频转换").font(.title2.bold())
                 Text(model.ffmpegStatus)
@@ -66,8 +83,19 @@ struct VideoConverterView: View {
             }
             Spacer()
             Button("添加视频", systemImage: "plus", action: model.chooseVideos)
+            Button {
+                isInspectorVisible.toggle()
+            } label: {
+                Label(
+                    isInspectorVisible ? "隐藏导出设置" : "显示导出设置",
+                    systemImage: "sidebar.right"
+                )
+            }
+            .labelStyle(.iconOnly)
+            .help(isInspectorVisible ? "隐藏导出设置" : "显示导出设置")
         }
-        .padding()
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
     }
 
     @ViewBuilder
@@ -103,11 +131,12 @@ struct VideoConverterView: View {
         HStack(spacing: 12) {
             Button(action: model.chooseOutputDirectory) {
                 Label(
-                    model.outputDirectory?.path(percentEncoded: false) ?? "选择导出文件夹",
+                    model.outputDirectory?.lastPathComponent ?? "选择导出文件夹",
                     systemImage: "folder"
                 )
                 .lineLimit(1)
             }
+            .frame(maxWidth: 240, alignment: .leading)
             .help(model.outputDirectory?.path(percentEncoded: false) ?? "选择导出文件夹")
 
             Spacer()
@@ -126,7 +155,12 @@ struct VideoConverterView: View {
                     .disabled(model.items.isEmpty || model.outputDirectory == nil || model.ffmpegStatus != "FFmpeg 已就绪")
             }
         }
-        .padding()
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+    }
+
+    private func inspectorWidth(for availableWidth: CGFloat) -> CGFloat {
+        min(max(availableWidth * 0.35, 360), 420)
     }
 }
 
@@ -158,12 +192,12 @@ private struct VideoItemRow: View {
                 }
             }
 
-            if item.status == .converting || item.progress > 0 {
+            if item.status == .converting {
                 ProgressView(value: item.progress)
             }
 
             HStack {
-                Text(item.status.label)
+                Label(item.status.label, systemImage: statusIcon)
                     .font(.caption)
                     .foregroundStyle(statusColor)
                 if case let .failed(message) = item.status {
@@ -180,6 +214,16 @@ private struct VideoItemRow: View {
         case .failed: .red
         case .cancelled: .orange
         default: .secondary
+        }
+    }
+
+    private var statusIcon: String {
+        switch item.status {
+        case .ready: "clock"
+        case .converting: "arrow.triangle.2.circlepath"
+        case .completed: "checkmark.circle.fill"
+        case .failed: "exclamationmark.triangle.fill"
+        case .cancelled: "xmark.circle"
         }
     }
 }

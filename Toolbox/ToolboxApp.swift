@@ -7,5 +7,7 @@ struct ToolboxApp: App {
             ContentView()
         }
         .windowStyle(.automatic)
+        .defaultSize(width: 1280, height: 780)
+        .windowResizability(.contentMinSize)
     }
 }
