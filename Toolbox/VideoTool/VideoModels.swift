@@ -153,6 +153,13 @@ enum ConversionStatus: Equatable {
         case .cancelled: "Cancelled"
         }
     }
+
+    var canStart: Bool {
+        switch self {
+        case .ready, .failed, .cancelled: true
+        case .converting, .completed: false
+        }
+    }
 }
 
 struct VideoItem: Identifiable {
@@ -160,17 +167,19 @@ struct VideoItem: Identifiable {
     let url: URL
     var metadata: VideoMetadata
     var outputBaseName: String
+    var preset: ConversionPreset
     var status: ConversionStatus = .ready
     var progress: Double = 0
     var elapsedTime: TimeInterval = 0
     var processingFPS: Double = 0
     var outputURL: URL?
 
-    init(url: URL, metadata: VideoMetadata) {
+    init(url: URL, metadata: VideoMetadata, preset: ConversionPreset) {
         id = UUID()
         self.url = url
         self.metadata = metadata
         outputBaseName = url.deletingPathExtension().lastPathComponent
+        self.preset = preset
     }
 }
 

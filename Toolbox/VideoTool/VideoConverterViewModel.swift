@@ -5,7 +5,8 @@ import UniformTypeIdentifiers
 @MainActor
 final class VideoConverterViewModel: ObservableObject {
     @Published var items: [VideoItem] = []
-    @Published var selectedPreset: ConversionPreset
+    @Published var defaultPreset: ConversionPreset
+    @Published var selectedItemID: UUID?
     @Published var outputDirectory: URL?
     @Published var isConverting = false
     @Published var presentedError: String?
@@ -15,7 +16,20 @@ final class VideoConverterViewModel: ObservableObject {
     private var conversionTask: Task<Void, Never>?
 
     init() {
-        selectedPreset = ConversionPreset.builtIns[0]
+        defaultPreset = ConversionPreset.builtIns[0]
+    }
+
+    var selectedItem: VideoItem? {
+        guard let selectedItemID else { return nil }
+        return items.first { $0.id == selectedItemID }
+    }
+
+    var editorPreset: ConversionPreset {
+        selectedItem?.preset ?? defaultPreset
+    }
+
+    var hasRunnableItems: Bool {
+        items.contains { $0.status.canStart }
     }
 
     var isFFmpegAvailable: Bool { engine.executableURL != nil }
@@ -25,13 +39,16 @@ final class VideoConverterViewModel: ObservableObject {
     }
 
     var estimatedOutputSize: String? {
-        guard !items.isEmpty,
-              selectedPreset.videoCodec.supportsBitrate,
-              let videoBitrate = selectedPreset.videoBitrateMbps else { return nil }
-
-        let totalDuration = items.reduce(0) { $0 + $1.metadata.duration }
-        let audioBitrate = selectedPreset.audioCodec == .aac ? selectedPreset.audioBitrateKbps * 1_000 : 1_536_000
-        let bytes = Int64(totalDuration * Double(videoBitrate * 1_000_000 + audioBitrate) / 8)
+        let bytes = items
+            .filter { $0.status.canStart }
+            .reduce(Int64(0)) { total, item in
+                let preset = normalizedPreset(item.preset)
+                guard preset.videoCodec.supportsBitrate,
+                      let videoBitrate = preset.videoBitrateMbps else { return total }
+                let audioBitrate = preset.audioCodec == .aac ? preset.audioBitrateKbps * 1_000 : 1_536_000
+                return total + Int64(item.metadata.duration * Double(videoBitrate * 1_000_000 + audioBitrate) / 8)
+            }
+        guard bytes > 0 else { return nil }
         return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 
@@ -87,7 +104,9 @@ final class VideoConverterViewModel: ObservableObject {
             Task {
                 do {
                     let metadata = try await VideoMetadataLoader.load(from: url)
-                    items.append(VideoItem(url: url, metadata: metadata))
+                    let item = VideoItem(url: url, metadata: metadata, preset: defaultPreset)
+                    items.append(item)
+                    selectedItemID = selectedItemID ?? item.id
                     outputDirectory = outputDirectory ?? url.deletingLastPathComponent()
                 } catch {
                     presentedError = "Could not read \(url.lastPathComponent): \(error.localizedDescription)"
@@ -97,23 +116,35 @@ final class VideoConverterViewModel: ObservableObject {
     }
 
     func remove(_ item: VideoItem) {
-        guard !isConverting else { return }
+        guard item.status != .converting else { return }
         items.removeAll { $0.id == item.id }
+        if selectedItemID == item.id {
+            selectedItemID = items.first?.id
+        }
     }
 
     func selectPreset(_ preset: ConversionPreset) {
-        selectedPreset = preset
+        updateEditorPreset(preset)
+    }
+
+    func updateEditorPreset(_ preset: ConversionPreset) {
+        if let selectedItemID, let itemIndex = index(for: selectedItemID) {
+            items[itemIndex].preset = preset
+        } else {
+            defaultPreset = preset
+        }
     }
 
     func startConversion() {
-        guard !isConverting, !items.isEmpty else { return }
+        guard !isConverting, hasRunnableItems else { return }
         guard let outputDirectory else {
             presentedError = VideoToolError.invalidOutputDirectory.localizedDescription
             return
         }
 
         isConverting = true
-        for index in items.indices {
+        let runnableIDs = items.filter { $0.status.canStart }.map(\.id)
+        for index in items.indices where items[index].status.canStart {
             items[index].status = .ready
             items[index].progress = 0
             items[index].elapsedTime = 0
@@ -121,11 +152,12 @@ final class VideoConverterViewModel: ObservableObject {
             items[index].outputURL = nil
         }
 
-        let preset = normalizedPreset(selectedPreset)
         conversionTask = Task {
-            for itemID in items.map(\.id) {
-                guard !Task.isCancelled, let itemIndex = index(for: itemID) else { break }
+            for itemID in runnableIDs {
+                guard !Task.isCancelled else { break }
+                guard let itemIndex = index(for: itemID) else { continue }
                 let item = items[itemIndex]
+                let preset = normalizedPreset(item.preset)
                 let outputURL = uniqueOutputURL(for: item, in: outputDirectory, preset: preset)
                 items[itemIndex].status = .converting
 
@@ -175,30 +207,32 @@ final class VideoConverterViewModel: ObservableObject {
     }
 
     func outputFileName(for item: VideoItem) -> String {
-        let preset = normalizedPreset(selectedPreset)
+        let preset = normalizedPreset(item.preset)
         return generatedFileName(for: item, preset: preset)
             .appending(".\(preset.container.fileExtension)")
     }
 
     func saveCurrentAsPreset(named name: String) {
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        var preset = selectedPreset
+        var preset = editorPreset
         preset.id = UUID()
         preset.name = name
         preset.isBuiltIn = false
         presetStore.save(preset)
-        selectedPreset = preset
+        updateEditorPreset(preset)
     }
 
     func deleteSelectedPreset() {
-        guard !selectedPreset.isBuiltIn else { return }
-        presetStore.delete(selectedPreset)
-        selectedPreset = ConversionPreset.builtIns[0]
+        let preset = editorPreset
+        guard !preset.isBuiltIn else { return }
+        presetStore.delete(preset)
+        updateEditorPreset(ConversionPreset.builtIns[0])
     }
 
     func updateSelectedPreset() {
-        guard !selectedPreset.isBuiltIn else { return }
-        presetStore.save(selectedPreset)
+        let preset = editorPreset
+        guard !preset.isBuiltIn else { return }
+        presetStore.save(preset)
     }
 
     private func index(for id: UUID) -> Int? {

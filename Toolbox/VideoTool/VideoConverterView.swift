@@ -62,14 +62,28 @@ struct VideoConverterView: View {
     }
 
     private var inspector: some View {
-        PresetEditorView(
-            preset: $model.selectedPreset,
-            presets: model.presetStore.allPresets,
-            selectPreset: model.selectPreset,
-            savePreset: { showingPresetName = true },
-            updatePreset: model.updateSelectedPreset,
-            deletePreset: model.deleteSelectedPreset
-        )
+        Group {
+            if let selectedItem = model.selectedItem {
+                PresetEditorView(
+                    preset: Binding(
+                        get: { model.editorPreset },
+                        set: model.updateEditorPreset
+                    ),
+                    presets: model.presetStore.allPresets,
+                    selectPreset: model.selectPreset,
+                    savePreset: { showingPresetName = true },
+                    updatePreset: model.updateSelectedPreset,
+                    deletePreset: model.deleteSelectedPreset
+                )
+                .disabled(!selectedItem.status.canStart)
+            } else {
+                ContentUnavailableView(
+                    "Select a Video",
+                    systemImage: "film.stack",
+                    description: Text("Choose a queue item to edit its export settings.")
+                )
+            }
+        }
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
@@ -111,7 +125,7 @@ struct VideoConverterView: View {
             .contentShape(Rectangle())
             .onDrop(of: [.fileURL], isTargeted: nil, perform: model.add(providers:))
         } else {
-            List {
+            List(selection: $model.selectedItemID) {
                 ForEach($model.items) { $item in
                     VideoItemRow(
                         item: $item,
@@ -119,6 +133,7 @@ struct VideoConverterView: View {
                         remove: { model.remove(item) },
                         reveal: { model.reveal(item) }
                     )
+                    .tag(item.id)
                 }
             }
             .dropDestination(for: URL.self) { urls, _ in
@@ -153,7 +168,7 @@ struct VideoConverterView: View {
             } else {
                 Button("Start Conversion", systemImage: "play.fill", action: model.startConversion)
                     .buttonStyle(.borderedProminent)
-                    .disabled(model.items.isEmpty || model.outputDirectory == nil || !model.isFFmpegAvailable)
+                    .disabled(!model.hasRunnableItems || model.outputDirectory == nil || !model.isFFmpegAvailable)
             }
         }
         .padding(.horizontal, 20)
@@ -188,7 +203,8 @@ private struct VideoItemRow: View {
                 if item.status == .completed {
                     Button("Reveal in Finder", systemImage: "folder", action: reveal)
                         .labelStyle(.iconOnly)
-                } else if item.status == .ready {
+                }
+                if item.status != .converting {
                     Button("Remove", systemImage: "xmark", action: remove)
                         .labelStyle(.iconOnly)
                 }
@@ -231,6 +247,11 @@ private struct VideoItemRow: View {
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
+                if let remainingTimeText {
+                    Text("Remaining \(remainingTimeText)")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
                 if case let .failed(message) = item.status {
                     Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
@@ -259,7 +280,21 @@ private struct VideoItemRow: View {
     }
 
     private var elapsedTimeText: String {
-        let totalSeconds = max(Int(item.elapsedTime.rounded()), 0)
+        durationText(item.elapsedTime)
+    }
+
+    private var remainingTimeText: String? {
+        guard item.status == .converting,
+              item.progress > 0.005,
+              item.progress < 1,
+              item.elapsedTime > 0 else { return nil }
+        let remaining = item.elapsedTime * (1 - item.progress) / item.progress
+        guard remaining.isFinite, remaining >= 0 else { return nil }
+        return durationText(remaining)
+    }
+
+    private func durationText(_ duration: TimeInterval) -> String {
+        let totalSeconds = max(Int(duration.rounded()), 0)
         if totalSeconds >= 3600 {
             return String(format: "%02d:%02d:%02d", totalSeconds / 3600, (totalSeconds % 3600) / 60, totalSeconds % 60)
         }
