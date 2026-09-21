@@ -2,6 +2,8 @@
 
 一款面向 macOS 的原生工具箱 App，计划整合创作、文本、网络、隐私和系统辅助工具。
 
+App 用户界面从英文版开始开发；项目协作文档继续使用中文。
+
 ## 当前状态
 
 首个本地 MVP 已完成：视频转换工具可以读取视频信息、批量排队，并按自定义参数通过 FFmpeg 和 VideoToolbox 导出。
@@ -16,7 +18,7 @@
 - 最低系统版本：macOS 15.0
 - Swift：6.0
 
-用 Xcode 打开 `Toolbox.xcodeproj` 后即可构建运行，左侧选择“视频转换”进入当前工具。
+用 Xcode 打开 `Toolbox.xcodeproj` 后即可构建运行，左侧选择 “Video Converter” 进入当前工具。
 
 视频转换 MVP 需要本机安装 FFmpeg：
 

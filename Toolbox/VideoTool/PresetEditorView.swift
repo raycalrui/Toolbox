@@ -11,12 +11,12 @@ struct PresetEditorView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                Text("导出设置")
+                Text("Export Settings")
                     .font(.title3.bold())
 
-                InspectorSection("预设") {
+                InspectorSection("Presets") {
                     VStack(alignment: .leading, spacing: 12) {
-                        Picker("预设", selection: presetSelection) {
+                        Picker("Preset", selection: presetSelection) {
                             ForEach(presets) { item in
                                 Text(item.name).tag(item.id)
                             }
@@ -25,20 +25,20 @@ struct PresetEditorView: View {
                         .frame(maxWidth: .infinity)
 
                         HStack(spacing: 8) {
-                            Button("另存为", action: savePreset)
-                            Button("更新", action: updatePreset)
+                            Button("Save As", action: savePreset)
+                            Button("Update", action: updatePreset)
                                 .disabled(preset.isBuiltIn)
                             Spacer(minLength: 0)
-                            Button("删除", role: .destructive, action: deletePreset)
+                            Button("Delete", role: .destructive, action: deletePreset)
                                 .disabled(preset.isBuiltIn)
                         }
                     }
                 }
 
-                InspectorSection("视频") {
+                InspectorSection("Video") {
                     Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 14) {
-                        SettingRow("容器") {
-                            Picker("容器", selection: $preset.container) {
+                        SettingRow("Container") {
+                            Picker("Container", selection: $preset.container) {
                                 ForEach(OutputContainer.allCases) { container in
                                     Text(container.displayName).tag(container)
                                 }
@@ -49,8 +49,8 @@ struct PresetEditorView: View {
 
                         SettingDivider()
 
-                        SettingRow("编码") {
-                            Picker("编码", selection: $preset.videoCodec) {
+                        SettingRow("Codec") {
+                            Picker("Codec", selection: $preset.videoCodec) {
                                 ForEach(VideoCodec.allCases) { codec in
                                     Text(codec.displayName).tag(codec)
                                 }
@@ -66,23 +66,23 @@ struct PresetEditorView: View {
 
                         SettingDivider()
 
-                        SettingRow("分辨率") {
+                        SettingRow("Resolution") {
                             DimensionsControl(width: $preset.width, height: $preset.height)
                         }
 
                         SettingDivider()
 
-                        SettingRow("帧率") {
+                        SettingRow("Frame Rate") {
                             OptionalDoubleControl(value: $preset.frameRate, suffix: "fps", defaultValue: 30)
                         }
 
                         SettingDivider()
 
-                        SettingRow("视频码率") {
+                        SettingRow("Video Bitrate") {
                             if preset.videoCodec.supportsBitrate {
                                 OptionalIntegerControl(value: $preset.videoBitrateMbps, suffix: "Mbps", defaultValue: 12)
                             } else {
-                                Text("由 ProRes 决定")
+                                Text("Determined by ProRes")
                                     .foregroundStyle(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .trailing)
                             }
@@ -90,10 +90,10 @@ struct PresetEditorView: View {
                     }
                 }
 
-                InspectorSection("音频") {
+                InspectorSection("Audio") {
                     Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 14) {
-                        SettingRow("编码") {
-                            Picker("音频编码", selection: $preset.audioCodec) {
+                        SettingRow("Codec") {
+                            Picker("Audio Codec", selection: $preset.audioCodec) {
                                 Text("AAC").tag(AudioCodec.aac)
                                 if preset.container == .mov {
                                     Text("Linear PCM").tag(AudioCodec.pcm)
@@ -104,12 +104,12 @@ struct PresetEditorView: View {
 
                         if preset.audioCodec == .aac {
                             SettingDivider()
-                            SettingRow("音频码率") {
+                            SettingRow("Audio Bitrate") {
                                 HStack(spacing: 8) {
                                     Spacer(minLength: 0)
                                     Text("\(preset.audioBitrateKbps) Kbps")
                                         .monospacedDigit()
-                                    Stepper("音频码率", value: $preset.audioBitrateKbps, in: 64...512, step: 32)
+                                    Stepper("Audio Bitrate", value: $preset.audioBitrateKbps, in: 64...512, step: 32)
                                         .labelsHidden()
                                 }
                             }
@@ -188,7 +188,7 @@ private struct DimensionsControl: View {
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 8) {
-            Toggle("保持原始", isOn: keepOriginal)
+            Toggle("Keep Original", isOn: keepOriginal)
                 .toggleStyle(.checkbox)
 
             if let currentWidth = width, let currentHeight = height {
@@ -225,11 +225,11 @@ private struct OptionalDoubleControl: View {
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 8) {
-            Toggle("保持原始", isOn: isAutomatic)
+            Toggle("Keep Original", isOn: isAutomatic)
                 .toggleStyle(.checkbox)
             if let currentValue = value {
                 HStack(spacing: 6) {
-                    TextField("数值", value: Binding(get: { currentValue }, set: { value = max($0, 1) }), format: .number)
+                    TextField("Value", value: Binding(get: { currentValue }, set: { value = max($0, 1) }), format: .number)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 68)
                     Text(suffix).foregroundStyle(.secondary)
@@ -251,7 +251,7 @@ private struct OptionalIntegerControl: View {
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 8) {
-            Toggle("自动", isOn: isAutomatic)
+            Toggle("Auto", isOn: isAutomatic)
                 .toggleStyle(.checkbox)
             if let currentValue = value {
                 HStack(spacing: 6) {
@@ -272,7 +272,7 @@ private struct CompactIntegerField: View {
     @Binding var value: Int
 
     var body: some View {
-        TextField("数值", value: $value, format: .number)
+        TextField("Value", value: $value, format: .number)
             .multilineTextAlignment(.trailing)
             .frame(width: 68)
     }

@@ -17,7 +17,7 @@ enum VideoMetadataLoader {
         let nominalFrameRate = try await track.load(.nominalFrameRate)
         let descriptions = try await track.load(.formatDescriptions)
         let transformedSize = naturalSize.applying(preferredTransform)
-        let codec = descriptions.first.map(codecName) ?? "未知编码"
+        let codec = descriptions.first.map(codecName) ?? "Unknown Codec"
         let resourceValues = try url.resourceValues(forKeys: [.fileSizeKey])
 
         return VideoMetadata(
@@ -44,7 +44,7 @@ enum VideoMetadataLoader {
         case "apcn": return "Apple ProRes 422"
         case "apch": return "Apple ProRes 422 HQ"
         case "ap4h": return "Apple ProRes 4444"
-        default: return code.isEmpty ? "未知编码" : code
+        default: return code.isEmpty ? "Unknown Codec" : code
         }
     }
 }
@@ -57,10 +57,10 @@ enum VideoToolError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noVideoTrack: "文件中没有可用的视频轨道。"
-        case .ffmpegNotFound: "没有找到 FFmpeg。请先通过 Homebrew 安装 FFmpeg。"
-        case .invalidOutputDirectory: "请选择有效的导出文件夹。"
-        case let .conversionFailed(message): message.isEmpty ? "FFmpeg 转换失败。" : message
+        case .noVideoTrack: "The file does not contain a usable video track."
+        case .ffmpegNotFound: "FFmpeg was not found. Install FFmpeg with Homebrew first."
+        case .invalidOutputDirectory: "Choose a valid output folder."
+        case let .conversionFailed(message): message.isEmpty ? "FFmpeg conversion failed." : message
         }
     }
 }

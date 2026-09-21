@@ -27,7 +27,7 @@
   - 已确认：SwiftUI / AVFoundation 负责原生界面和媒体信息，FFmpeg 负责转换，并通过 VideoToolbox 硬件编码。
   - MVP 范围：MP4 / MOV，H.264 / HEVC / ProRes 422，AAC / PCM，批量队列，自定义分辨率、帧率和码率，导出预设、进度、取消与 Finder 定位。
   - 本地开发暂用 Homebrew FFmpeg；开源或分发前需要提供独立、可复现且许可证合规的 FFmpeg 构建。
-  - 验证：Debug 构建成功；H.264、HEVC、ProRes 三条 VideoToolbox 转码命令成功；App 界面完成 640×360 H.264 输入到 1920×1080、30 fps、H.264 + AAC 输出的端到端转换；三栏宽度、侧边栏、导出参数面板和设置面板显隐完成界面检查。
+  - 验证：Debug 构建成功；H.264、HEVC、ProRes 三条 VideoToolbox 转码命令成功；App 界面完成 640×360 H.264 输入到 1920×1080、30 fps、H.264 + AAC 输出的端到端转换；三栏宽度、侧边栏、导出参数面板和设置面板显隐完成界面检查；当前所有用户可见文案已统一为英文。
 
 - **VID-002 `[候选]` 可分发的 FFmpeg 集成**
   - 生成并内嵌可复现、许可证合规的 Apple Silicon / Intel FFmpeg 构建。

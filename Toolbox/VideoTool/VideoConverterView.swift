@@ -22,22 +22,22 @@ struct VideoConverterView: View {
             }
         }
         .animation(.easeInOut(duration: 0.18), value: isInspectorVisible)
-        .alert("转换错误", isPresented: Binding(
+        .alert("Conversion Error", isPresented: Binding(
             get: { model.presentedError != nil },
             set: { if !$0 { model.presentedError = nil } }
         )) {
-            Button("好") { model.presentedError = nil }
+            Button("OK") { model.presentedError = nil }
         } message: {
-            Text(model.presentedError ?? "未知错误")
+            Text(model.presentedError ?? "Unknown error")
         }
         .sheet(isPresented: $showingPresetName) {
             VStack(alignment: .leading, spacing: 16) {
-                Text("保存导出预设").font(.headline)
-                TextField("预设名称", text: $presetName)
+                Text("Save Export Preset").font(.headline)
+                TextField("Preset Name", text: $presetName)
                 HStack {
                     Spacer()
-                    Button("取消") { showingPresetName = false }
-                    Button("保存") {
+                    Button("Cancel") { showingPresetName = false }
+                    Button("Save") {
                         model.saveCurrentAsPreset(named: presetName)
                         presetName = ""
                         showingPresetName = false
@@ -76,23 +76,23 @@ struct VideoConverterView: View {
     private var header: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("视频转换").font(.title2.bold())
+                Text("Video Converter").font(.title2.bold())
                 Text(model.ffmpegStatus)
                     .font(.caption)
-                    .foregroundStyle(model.ffmpegStatus == "FFmpeg 已就绪" ? Color.secondary : Color.red)
+                    .foregroundStyle(model.isFFmpegAvailable ? Color.secondary : Color.red)
             }
             Spacer()
-            Button("添加视频", systemImage: "plus", action: model.chooseVideos)
+            Button("Add Videos", systemImage: "plus", action: model.chooseVideos)
             Button {
                 isInspectorVisible.toggle()
             } label: {
                 Label(
-                    isInspectorVisible ? "隐藏导出设置" : "显示导出设置",
+                    isInspectorVisible ? "Hide Export Settings" : "Show Export Settings",
                     systemImage: "sidebar.right"
                 )
             }
             .labelStyle(.iconOnly)
-            .help(isInspectorVisible ? "隐藏导出设置" : "显示导出设置")
+            .help(isInspectorVisible ? "Hide Export Settings" : "Show Export Settings")
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -102,11 +102,11 @@ struct VideoConverterView: View {
     private var fileArea: some View {
         if model.items.isEmpty {
             ContentUnavailableView {
-                Label("添加要转换的视频", systemImage: "film.stack")
+                Label("Add Videos to Convert", systemImage: "film.stack")
             } description: {
-                Text("拖入视频，或点击“添加视频”选择多个文件")
+                Text("Drop videos here, or click Add Videos to select multiple files.")
             } actions: {
-                Button("选择视频", action: model.chooseVideos)
+                Button("Choose Videos", action: model.chooseVideos)
             }
             .contentShape(Rectangle())
             .onDrop(of: [.fileURL], isTargeted: nil, perform: model.add(providers:))
@@ -131,28 +131,28 @@ struct VideoConverterView: View {
         HStack(spacing: 12) {
             Button(action: model.chooseOutputDirectory) {
                 Label(
-                    model.outputDirectory?.lastPathComponent ?? "选择导出文件夹",
+                    model.outputDirectory?.lastPathComponent ?? "Choose Output Folder",
                     systemImage: "folder"
                 )
                 .lineLimit(1)
             }
             .frame(maxWidth: 240, alignment: .leading)
-            .help(model.outputDirectory?.path(percentEncoded: false) ?? "选择导出文件夹")
+            .help(model.outputDirectory?.path(percentEncoded: false) ?? "Choose Output Folder")
 
             Spacer()
 
             if let estimatedOutputSize = model.estimatedOutputSize {
-                Text("预计约 \(estimatedOutputSize)")
+                Text("Estimated: ~\(estimatedOutputSize)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             if model.isConverting {
-                Button("取消", role: .destructive, action: model.cancelConversion)
+                Button("Cancel", role: .destructive, action: model.cancelConversion)
             } else {
-                Button("开始转换", systemImage: "play.fill", action: model.startConversion)
+                Button("Start Conversion", systemImage: "play.fill", action: model.startConversion)
                     .buttonStyle(.borderedProminent)
-                    .disabled(model.items.isEmpty || model.outputDirectory == nil || model.ffmpegStatus != "FFmpeg 已就绪")
+                    .disabled(model.items.isEmpty || model.outputDirectory == nil || !model.isFFmpegAvailable)
             }
         }
         .padding(.horizontal, 20)
@@ -184,10 +184,10 @@ private struct VideoItemRow: View {
                 }
                 Spacer()
                 if item.status == .completed {
-                    Button("在 Finder 中显示", systemImage: "folder", action: reveal)
+                    Button("Reveal in Finder", systemImage: "folder", action: reveal)
                         .labelStyle(.iconOnly)
                 } else if item.status == .ready {
-                    Button("移除", systemImage: "xmark", action: remove)
+                    Button("Remove", systemImage: "xmark", action: remove)
                         .labelStyle(.iconOnly)
                 }
             }

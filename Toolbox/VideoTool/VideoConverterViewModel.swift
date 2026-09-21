@@ -18,8 +18,10 @@ final class VideoConverterViewModel: ObservableObject {
         selectedPreset = ConversionPreset.builtIns[0]
     }
 
+    var isFFmpegAvailable: Bool { engine.executableURL != nil }
+
     var ffmpegStatus: String {
-        engine.executableURL == nil ? "未找到 FFmpeg" : "FFmpeg 已就绪"
+        isFFmpegAvailable ? "FFmpeg Ready" : "FFmpeg Not Found"
     }
 
     var estimatedOutputSize: String? {
@@ -35,7 +37,7 @@ final class VideoConverterViewModel: ObservableObject {
 
     func chooseVideos() {
         let panel = NSOpenPanel()
-        panel.title = "选择要转换的视频"
+        panel.title = "Choose Videos to Convert"
         panel.allowedContentTypes = [.movie, .video]
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
@@ -47,7 +49,7 @@ final class VideoConverterViewModel: ObservableObject {
 
     func chooseOutputDirectory() {
         let panel = NSOpenPanel()
-        panel.title = "选择导出文件夹"
+        panel.title = "Choose Output Folder"
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
@@ -88,7 +90,7 @@ final class VideoConverterViewModel: ObservableObject {
                     items.append(VideoItem(url: url, metadata: metadata))
                     outputDirectory = outputDirectory ?? url.deletingLastPathComponent()
                 } catch {
-                    presentedError = "无法读取 \(url.lastPathComponent)：\(error.localizedDescription)"
+                    presentedError = "Could not read \(url.lastPathComponent): \(error.localizedDescription)"
                 }
             }
         }
@@ -150,7 +152,7 @@ final class VideoConverterViewModel: ObservableObject {
                     if let failedIndex = index(for: itemID) {
                         items[failedIndex].status = .failed(error.localizedDescription)
                     }
-                    presentedError = "\(item.url.lastPathComponent) 转换失败：\(error.localizedDescription)"
+                    presentedError = "Conversion failed for \(item.url.lastPathComponent): \(error.localizedDescription)"
                 }
             }
             isConverting = false

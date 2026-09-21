@@ -18,9 +18,9 @@ enum VideoCodec: String, Codable, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .h264VideoToolbox: "H.264（硬件）"
-        case .hevcVideoToolbox: "HEVC（硬件）"
-        case .proResVideoToolbox: "Apple ProRes 422（硬件）"
+        case .h264VideoToolbox: "H.264 (Hardware)"
+        case .hevcVideoToolbox: "HEVC (Hardware)"
+        case .proResVideoToolbox: "Apple ProRes 422 (Hardware)"
         }
     }
 
@@ -66,7 +66,7 @@ struct ConversionPreset: Identifiable, Codable, Hashable {
     static let builtIns: [ConversionPreset] = [
         ConversionPreset(
             id: UUID(uuidString: "D429734B-6310-45CF-9F9B-870E31CD6A01")!,
-            name: "1080p H.264 快速导出",
+            name: "Fast 1080p H.264",
             container: .mp4,
             videoCodec: .h264VideoToolbox,
             width: 1920,
@@ -79,7 +79,7 @@ struct ConversionPreset: Identifiable, Codable, Hashable {
         ),
         ConversionPreset(
             id: UUID(uuidString: "98B177BC-97F2-4871-BAC6-CE4A87F1C702")!,
-            name: "4K HEVC 高效导出",
+            name: "Efficient 4K HEVC",
             container: .mp4,
             videoCodec: .hevcVideoToolbox,
             width: 3840,
@@ -92,7 +92,7 @@ struct ConversionPreset: Identifiable, Codable, Hashable {
         ),
         ConversionPreset(
             id: UUID(uuidString: "7F128464-B8D0-45BC-B1E8-6D5C9EF20203")!,
-            name: "ProRes 422 保持原始尺寸",
+            name: "ProRes 422 — Original Size",
             container: .mov,
             videoCodec: .proResVideoToolbox,
             width: nil,
@@ -122,7 +122,7 @@ struct VideoMetadata: Hashable {
     var resolutionText: String { "\(width) × \(height)" }
 
     var frameRateText: String {
-        frameRate > 0 ? String(format: "%.2f fps", frameRate) : "未知帧率"
+        frameRate > 0 ? String(format: "%.2f fps", frameRate) : "Unknown Frame Rate"
     }
 
     var fileSizeText: String {
@@ -139,11 +139,11 @@ enum ConversionStatus: Equatable {
 
     var label: String {
         switch self {
-        case .ready: "等待转换"
-        case .converting: "正在转换"
-        case .completed: "已完成"
-        case .failed: "失败"
-        case .cancelled: "已取消"
+        case .ready: "Ready"
+        case .converting: "Converting"
+        case .completed: "Completed"
+        case .failed: "Failed"
+        case .cancelled: "Cancelled"
         }
     }
 }

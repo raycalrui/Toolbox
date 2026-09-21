@@ -22,14 +22,14 @@ private struct ToolboxSidebar: View {
                 .padding(.top, 18)
                 .padding(.bottom, 22)
 
-            Text("创作")
+            Text("Creative")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .textCase(.uppercase)
                 .padding(.horizontal, 18)
                 .padding(.bottom, 8)
 
-            Label("视频转换", systemImage: "film.stack")
+            Label("Video Converter", systemImage: "film.stack")
                 .fontWeight(.medium)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12)
