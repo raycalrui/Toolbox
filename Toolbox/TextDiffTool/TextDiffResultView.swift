@@ -13,7 +13,7 @@ struct TextDiffResultView: View {
                     description: Text("Enter or drop text into either editor.")
                 )
             } else {
-                ScrollView([.horizontal, .vertical]) {
+                ScrollView(.vertical) {
                     LazyVStack(alignment: .leading, spacing: 1) {
                         if presentation == .sideBySide {
                             ForEach(rows) { row in
@@ -25,7 +25,7 @@ struct TextDiffResultView: View {
                             }
                         }
                     }
-                    .frame(minWidth: 700, maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 6)
                 }
             }
@@ -85,6 +85,7 @@ struct TextDiffResultView: View {
                 .frame(width: 36, alignment: .trailing)
             segmentText(segments)
                 .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 12)
         }
         .font(.system(.body, design: .monospaced))
@@ -105,6 +106,7 @@ struct TextDiffResultView: View {
                 .frame(width: 16)
             segmentText(segments)
                 .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 12)
         }
         .font(.system(.body, design: .monospaced))

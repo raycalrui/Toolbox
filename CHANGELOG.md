@@ -29,4 +29,4 @@
   - Password Tools：安全密码生成、易混淆字符排除和完全离线的强度检查。
   - Network Tools：本地 / 公网 IPv4 与 IPv6、Ping 和 IP/CIDR 解析。
 - 公网 IP 查询改为由用户主动刷新，并在界面标示 ipify.org 与不持久化策略。
-- 修复 Text Diff 编辑器与结果分割区未撑满窗口、Revised 面板被截断及工具栏标签换行的问题。
+- 修复 Text Diff 编辑器与结果分割区未撑满窗口、Revised 面板被截断及工具栏标签换行的问题，并使上下区域的中央分隔线保持对齐。
