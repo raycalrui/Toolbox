@@ -33,6 +33,13 @@ enum VideoCodec: String, Codable, CaseIterable, Identifiable {
     }
 
     var supportsBitrate: Bool { self != .proResVideoToolbox }
+    var fileNameTag: String {
+        switch self {
+        case .h264VideoToolbox: "H264"
+        case .hevcVideoToolbox: "H265"
+        case .proResVideoToolbox: "PRORES422"
+        }
+    }
     var requiredContainer: OutputContainer? {
         self == .proResVideoToolbox ? .mov : nil
     }
@@ -152,13 +159,23 @@ struct VideoItem: Identifiable {
     let id: UUID
     let url: URL
     var metadata: VideoMetadata
+    var outputBaseName: String
     var status: ConversionStatus = .ready
     var progress: Double = 0
+    var elapsedTime: TimeInterval = 0
+    var processingFPS: Double = 0
     var outputURL: URL?
 
     init(url: URL, metadata: VideoMetadata) {
         id = UUID()
         self.url = url
         self.metadata = metadata
+        outputBaseName = url.deletingPathExtension().lastPathComponent
     }
+}
+
+struct ConversionProgress: Sendable {
+    var fraction: Double
+    var elapsedTime: TimeInterval
+    var framesPerSecond: Double
 }

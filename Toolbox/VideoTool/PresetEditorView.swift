@@ -67,13 +67,15 @@ struct PresetEditorView: View {
                         SettingDivider()
 
                         SettingRow("Resolution") {
-                            DimensionsControl(width: $preset.width, height: $preset.height)
+                            ResolutionControl(width: $preset.width, height: $preset.height)
+                                .id(preset.id)
                         }
 
                         SettingDivider()
 
                         SettingRow("Frame Rate") {
-                            OptionalDoubleControl(value: $preset.frameRate, suffix: "fps", defaultValue: 30)
+                            FrameRateControl(value: $preset.frameRate)
+                                .id(preset.id)
                         }
 
                         SettingDivider()
@@ -182,16 +184,24 @@ private struct SettingDivider: View {
     }
 }
 
-private struct DimensionsControl: View {
+private struct ResolutionControl: View {
     @Binding var width: Int?
     @Binding var height: Int?
+    @State private var keepsCustomEditorVisible = false
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 8) {
-            Toggle("Keep Original", isOn: keepOriginal)
-                .toggleStyle(.checkbox)
+            Picker("Resolution", selection: selection) {
+                ForEach(ResolutionOption.options) { option in
+                    Text(option.label).tag(option)
+                }
+            }
+            .labelsHidden()
+            .frame(width: 190)
 
-            if let currentWidth = width, let currentHeight = height {
+            if selectedOption == .custom,
+               let currentWidth = width,
+               let currentHeight = height {
                 HStack(spacing: 5) {
                     CompactIntegerField(value: Binding(get: { currentWidth }, set: { width = max($0, 2) }))
                     Text("×").foregroundStyle(.secondary)
@@ -202,45 +212,150 @@ private struct DimensionsControl: View {
         .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
-    private var keepOriginal: Binding<Bool> {
+    private var selectedOption: ResolutionOption {
+        if keepsCustomEditorVisible { return .custom }
+        guard let width, let height else { return .original }
+        return ResolutionOption.options.first {
+            guard case let .size(optionWidth, optionHeight, _) = $0 else { return false }
+            return optionWidth == width && optionHeight == height
+        } ?? .custom
+    }
+
+    private var selection: Binding<ResolutionOption> {
         Binding(
-            get: { width == nil || height == nil },
-            set: { keepOriginal in
-                if keepOriginal {
+            get: { selectedOption },
+            set: { option in
+                switch option {
+                case .original:
+                    keepsCustomEditorVisible = false
                     width = nil
                     height = nil
-                } else {
-                    width = 1920
-                    height = 1080
+                case let .size(selectedWidth, selectedHeight, _):
+                    keepsCustomEditorVisible = false
+                    width = selectedWidth
+                    height = selectedHeight
+                case .custom:
+                    keepsCustomEditorVisible = true
+                    width = width ?? 1920
+                    height = height ?? 1080
                 }
             }
         )
     }
 }
 
-private struct OptionalDoubleControl: View {
+private enum ResolutionOption: Hashable, Identifiable {
+    case original
+    case size(Int, Int, String)
+    case custom
+
+    static let options: [ResolutionOption] = [
+        .original,
+        .size(1280, 720, "720p — 1280 × 720"),
+        .size(1920, 1080, "1080p — 1920 × 1080"),
+        .size(2560, 1440, "1440p — 2560 × 1440"),
+        .size(3840, 2160, "4K UHD — 3840 × 2160"),
+        .size(7680, 4320, "8K UHD — 7680 × 4320"),
+        .custom
+    ]
+
+    var id: String { label }
+    var label: String {
+        switch self {
+        case .original: "Keep Original"
+        case let .size(_, _, label): label
+        case .custom: "Custom…"
+        }
+    }
+
+}
+
+private struct FrameRateControl: View {
     @Binding var value: Double?
-    let suffix: String
-    let defaultValue: Double
+    @State private var keepsCustomEditorVisible = false
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 8) {
-            Toggle("Keep Original", isOn: isAutomatic)
-                .toggleStyle(.checkbox)
-            if let currentValue = value {
+            Picker("Frame Rate", selection: selection) {
+                ForEach(FrameRateOption.options) { option in
+                    Text(option.label).tag(option)
+                }
+            }
+            .labelsHidden()
+            .frame(width: 190)
+
+            if selectedOption == .custom, let currentValue = value {
                 HStack(spacing: 6) {
                     TextField("Value", value: Binding(get: { currentValue }, set: { value = max($0, 1) }), format: .number)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 68)
-                    Text(suffix).foregroundStyle(.secondary)
+                    Text("fps").foregroundStyle(.secondary)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
-    private var isAutomatic: Binding<Bool> {
-        Binding(get: { value == nil }, set: { value = $0 ? nil : defaultValue })
+    private var selectedOption: FrameRateOption {
+        if keepsCustomEditorVisible { return .custom }
+        guard let value else { return .original }
+        return FrameRateOption.options.first {
+            guard let rate = $0.frameRate else { return false }
+            return abs(rate - value) < 0.001
+        } ?? .custom
+    }
+
+    private var selection: Binding<FrameRateOption> {
+        Binding(
+            get: { selectedOption },
+            set: { option in
+                switch option {
+                case .original:
+                    keepsCustomEditorVisible = false
+                    value = nil
+                case let .rate(rate, _):
+                    keepsCustomEditorVisible = false
+                    value = rate
+                case .custom:
+                    keepsCustomEditorVisible = true
+                    value = value ?? 30
+                }
+            }
+        )
+    }
+}
+
+private enum FrameRateOption: Hashable, Identifiable {
+    case original
+    case rate(Double, String)
+    case custom
+
+    static let options: [FrameRateOption] = [
+        .original,
+        .rate(23.976, "23.976 fps"),
+        .rate(24, "24 fps"),
+        .rate(25, "25 fps"),
+        .rate(29.97, "29.97 fps"),
+        .rate(30, "30 fps"),
+        .rate(50, "50 fps"),
+        .rate(59.94, "59.94 fps"),
+        .rate(60, "60 fps"),
+        .rate(120, "120 fps"),
+        .custom
+    ]
+
+    var id: String { label }
+    var label: String {
+        switch self {
+        case .original: "Keep Original"
+        case let .rate(_, label): label
+        case .custom: "Custom…"
+        }
+    }
+
+    var frameRate: Double? {
+        guard case let .rate(rate, _) = self else { return nil }
+        return rate
     }
 }
 

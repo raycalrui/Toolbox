@@ -112,9 +112,10 @@ struct VideoConverterView: View {
             .onDrop(of: [.fileURL], isTargeted: nil, perform: model.add(providers:))
         } else {
             List {
-                ForEach(model.items) { item in
+                ForEach($model.items) { $item in
                     VideoItemRow(
-                        item: item,
+                        item: $item,
+                        outputFileName: model.outputFileName(for: item),
                         remove: { model.remove(item) },
                         reveal: { model.reveal(item) }
                     )
@@ -165,7 +166,8 @@ struct VideoConverterView: View {
 }
 
 private struct VideoItemRow: View {
-    let item: VideoItem
+    @Binding var item: VideoItem
+    let outputFileName: String
     let remove: () -> Void
     let reveal: () -> Void
 
@@ -192,14 +194,43 @@ private struct VideoItemRow: View {
                 }
             }
 
+            HStack(spacing: 8) {
+                Text("Name")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("Output Name", text: $item.outputBaseName)
+                    .textFieldStyle(.roundedBorder)
+                    .disabled(item.status != .ready)
+            }
+            Text("Output: \(outputFileName)")
+                .font(.caption.monospaced())
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .help(outputFileName)
+
             if item.status == .converting {
-                ProgressView(value: item.progress)
+                HStack(spacing: 10) {
+                    ProgressView(value: item.progress)
+                    Text(item.progress, format: .percent.precision(.fractionLength(0)))
+                        .font(.caption.monospacedDigit())
+                        .frame(width: 38, alignment: .trailing)
+                }
             }
 
-            HStack {
+            HStack(spacing: 12) {
                 Label(item.status.label, systemImage: statusIcon)
                     .font(.caption)
                     .foregroundStyle(statusColor)
+                if item.elapsedTime > 0 {
+                    Text("Elapsed \(elapsedTimeText)")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                if item.processingFPS > 0 {
+                    Text("\(item.processingFPS, specifier: "%.1f") fps")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
                 if case let .failed(message) = item.status {
                     Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
@@ -225,5 +256,13 @@ private struct VideoItemRow: View {
         case .failed: "exclamationmark.triangle.fill"
         case .cancelled: "xmark.circle"
         }
+    }
+
+    private var elapsedTimeText: String {
+        let totalSeconds = max(Int(item.elapsedTime.rounded()), 0)
+        if totalSeconds >= 3600 {
+            return String(format: "%02d:%02d:%02d", totalSeconds / 3600, (totalSeconds % 3600) / 60, totalSeconds % 60)
+        }
+        return String(format: "%02d:%02d", totalSeconds / 60, totalSeconds % 60)
     }
 }

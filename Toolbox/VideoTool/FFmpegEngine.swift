@@ -29,7 +29,7 @@ final class FFmpegEngine {
         output: URL,
         preset: ConversionPreset,
         duration: Double,
-        progress: @escaping @MainActor (Double) -> Void
+        progress: @escaping @MainActor (ConversionProgress) -> Void
     ) async throws {
         guard let executableURL else { throw VideoToolError.ffmpegNotFound }
 
@@ -38,6 +38,7 @@ final class FFmpegEngine {
         let errorPipe = Pipe()
         let errorCollector = OutputCollector()
         let progressParser = ProgressParser(duration: duration)
+        let startTime = Date()
 
         process.executableURL = executableURL
         process.arguments = FFmpegCommandBuilder.arguments(input: input, output: output, preset: preset)
@@ -48,9 +49,14 @@ final class FFmpegEngine {
         progressPipe.fileHandleForReading.readabilityHandler = { handle in
             let data = handle.availableData
             guard !data.isEmpty else { return }
-            let values = progressParser.consume(data)
-            for value in values {
-                Task { @MainActor in progress(value) }
+            let snapshots = progressParser.consume(data)
+            for snapshot in snapshots {
+                let update = ConversionProgress(
+                    fraction: snapshot.fraction,
+                    elapsedTime: Date().timeIntervalSince(startTime),
+                    framesPerSecond: snapshot.framesPerSecond
+                )
+                Task { @MainActor in progress(update) }
             }
         }
 
@@ -72,7 +78,11 @@ final class FFmpegEngine {
         errorCollector.append(errorPipe.fileHandleForReading.readDataToEndOfFile())
 
         if status == 0 {
-            progress(1)
+            progress(ConversionProgress(
+                fraction: 1,
+                elapsedTime: Date().timeIntervalSince(startTime),
+                framesPerSecond: progressParser.latestFramesPerSecond
+            ))
             return
         }
 
@@ -117,12 +127,24 @@ private final class ProgressParser: @unchecked Sendable {
     private let lock = NSLock()
     private let duration: Double
     private var buffer = ""
+    private var framesPerSecond = 0.0
+
+    struct Snapshot {
+        var fraction: Double
+        var framesPerSecond: Double
+    }
 
     init(duration: Double) {
         self.duration = duration
     }
 
-    func consume(_ data: Data) -> [Double] {
+    var latestFramesPerSecond: Double {
+        lock.lock()
+        defer { lock.unlock() }
+        return framesPerSecond
+    }
+
+    func consume(_ data: Data) -> [Snapshot] {
         lock.lock()
         defer { lock.unlock() }
 
@@ -131,10 +153,18 @@ private final class ProgressParser: @unchecked Sendable {
         buffer = String(lines.last ?? "")
 
         guard duration > 0 else { return [] }
-        return lines.dropLast().compactMap { line in
-            guard line.hasPrefix("out_time_us="),
-                  let microseconds = Double(line.dropFirst("out_time_us=".count)) else { return nil }
-            return min(max(microseconds / 1_000_000 / duration, 0), 1)
+        var snapshots: [Snapshot] = []
+        for line in lines.dropLast() {
+            if line.hasPrefix("fps="), let fps = Double(line.dropFirst("fps=".count)) {
+                framesPerSecond = fps
+            } else if line.hasPrefix("out_time_us="),
+                      let microseconds = Double(line.dropFirst("out_time_us=".count)) {
+                snapshots.append(Snapshot(
+                    fraction: min(max(microseconds / 1_000_000 / duration, 0), 1),
+                    framesPerSecond: framesPerSecond
+                ))
+            }
         }
+        return snapshots
     }
 }

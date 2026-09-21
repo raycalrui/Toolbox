@@ -116,6 +116,8 @@ final class VideoConverterViewModel: ObservableObject {
         for index in items.indices {
             items[index].status = .ready
             items[index].progress = 0
+            items[index].elapsedTime = 0
+            items[index].processingFPS = 0
             items[index].outputURL = nil
         }
 
@@ -124,7 +126,7 @@ final class VideoConverterViewModel: ObservableObject {
             for itemID in items.map(\.id) {
                 guard !Task.isCancelled, let itemIndex = index(for: itemID) else { break }
                 let item = items[itemIndex]
-                let outputURL = uniqueOutputURL(for: item.url, in: outputDirectory, preset: preset)
+                let outputURL = uniqueOutputURL(for: item, in: outputDirectory, preset: preset)
                 items[itemIndex].status = .converting
 
                 do {
@@ -133,9 +135,11 @@ final class VideoConverterViewModel: ObservableObject {
                         output: outputURL,
                         preset: preset,
                         duration: item.metadata.duration
-                    ) { progress in
+                    ) { update in
                         guard let currentIndex = self.index(for: itemID) else { return }
-                        self.items[currentIndex].progress = progress
+                        self.items[currentIndex].progress = update.fraction
+                        self.items[currentIndex].elapsedTime = update.elapsedTime
+                        self.items[currentIndex].processingFPS = update.framesPerSecond
                     }
 
                     if let completedIndex = index(for: itemID) {
@@ -168,6 +172,12 @@ final class VideoConverterViewModel: ObservableObject {
     func reveal(_ item: VideoItem) {
         guard let outputURL = item.outputURL else { return }
         NSWorkspace.shared.activateFileViewerSelecting([outputURL])
+    }
+
+    func outputFileName(for item: VideoItem) -> String {
+        let preset = normalizedPreset(selectedPreset)
+        return generatedFileName(for: item, preset: preset)
+            .appending(".\(preset.container.fileExtension)")
     }
 
     func saveCurrentAsPreset(named name: String) {
@@ -207,19 +217,60 @@ final class VideoConverterViewModel: ObservableObject {
         return result
     }
 
-    private func uniqueOutputURL(for input: URL, in directory: URL, preset: ConversionPreset) -> URL {
-        let base = input.deletingPathExtension().lastPathComponent
+    private func uniqueOutputURL(for item: VideoItem, in directory: URL, preset: ConversionPreset) -> URL {
+        let fileName = generatedFileName(for: item, preset: preset)
         var candidate = directory
-            .appendingPathComponent("\(base)-converted")
+            .appendingPathComponent(fileName)
             .appendingPathExtension(preset.container.fileExtension)
         var counter = 2
 
         while FileManager.default.fileExists(atPath: candidate.path) {
             candidate = directory
-                .appendingPathComponent("\(base)-converted-\(counter)")
+                .appendingPathComponent("\(fileName)_\(counter)")
                 .appendingPathExtension(preset.container.fileExtension)
             counter += 1
         }
         return candidate
+    }
+
+    private func generatedFileName(for item: VideoItem, preset: ConversionPreset) -> String {
+        let customBase = sanitizedFileName(item.outputBaseName)
+        let fallbackBase = sanitizedFileName(item.url.deletingPathExtension().lastPathComponent)
+        let base = customBase.isEmpty ? fallbackBase : customBase
+        let width = preset.width ?? item.metadata.width
+        let height = preset.height ?? item.metadata.height
+        let frameRate = preset.frameRate ?? item.metadata.frameRate
+
+        var tags = ["\(resolutionTag(width: width, height: height))\(frameRateTag(frameRate))", preset.videoCodec.fileNameTag]
+        if preset.videoCodec.supportsBitrate, let bitrate = preset.videoBitrateMbps {
+            tags.append("\(bitrate)M")
+        }
+        return ([base] + tags).joined(separator: "_")
+    }
+
+    private func sanitizedFileName(_ value: String) -> String {
+        value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .components(separatedBy: CharacterSet(charactersIn: "/:"))
+            .joined(separator: "-")
+    }
+
+    private func resolutionTag(width: Int, height: Int) -> String {
+        switch (width, height) {
+        case (7680, 4320): "8K"
+        case (3840, 2160): "4K"
+        case (2560, 1440): "1440P"
+        case (1920, 1080): "1080P"
+        case (1280, 720): "720P"
+        default: "\(width)x\(height)"
+        }
+    }
+
+    private func frameRateTag(_ frameRate: Double) -> String {
+        guard frameRate > 0 else { return "" }
+        if abs(frameRate.rounded() - frameRate) < 0.01 {
+            return String(Int(frameRate.rounded()))
+        }
+        return String(format: "%.2f", frameRate).replacingOccurrences(of: ".", with: "p")
     }
 }
