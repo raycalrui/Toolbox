@@ -28,14 +28,14 @@
   - 已完成改进：每个视频独立保存导出参数，右侧编辑当前选中视频；完成项目不重复转换；取消、失败和完成状态可删除；转换中显示预计剩余时间。
   - 已确认：SwiftUI / AVFoundation 负责原生界面和媒体信息，FFmpeg 负责转换，并通过 VideoToolbox 硬件编码。
   - MVP 范围：MP4 / MOV，H.264 / HEVC / ProRes 422，AAC / PCM，批量队列，自定义分辨率、帧率和码率，导出预设、进度、取消与 Finder 定位。
-  - 本地开发暂用 Homebrew FFmpeg；开源或分发前需要提供独立、可复现且许可证合规的 FFmpeg 构建。
+  - 使用用户通过 Homebrew 安装的 FFmpeg，不在 App 内嵌 FFmpeg。
   - 验证：Debug 构建成功；H.264、HEVC、ProRes 三条 VideoToolbox 转码命令成功；App 界面完成端到端转换；三栏宽度、英文文案和设置面板显隐完成界面检查；新增预设选单及 Custom 输入已检查；实际生成 `demo_4K60_H265_40M.mp4`，并由 ffprobe 确认为 3840×2160、60 fps、HEVC；两条视频分别保持 H.264/12 Mbps 与 HEVC/8 Mbps；完成后再次启动只重试取消项；长视频转换中显示百分比、用时、实时 fps 和预计剩余时间；取消后仍可删除。
 
-- **VID-002 `[候选]` 可分发的 FFmpeg 集成**
-  - 生成并内嵌可复现、许可证合规的 Apple Silicon / Intel FFmpeg 构建。
-  - 恢复 App Sandbox，处理文件安全作用域、辅助进程签名及 Hardened Runtime。
-  - 补齐 FFmpeg 许可证、源码和构建配置说明。
-  - 等用户确认本地 MVP 体验后再进入实施。
+- **VID-002 `[候选]` FFmpeg 依赖检测与安装引导**
+  - 启动视频工具时检测 Homebrew FFmpeg 是否可用。
+  - 未安装时显示清晰说明，并提供可复制的 `brew install ffmpeg` 命令。
+  - 区分未安装 Homebrew 与仅缺少 FFmpeg 的情况，不由 App 自动执行安装。
+  - 提供重新检测入口，安装完成后无需重启 App 即可继续使用。
 
 ### 文本与开发
 
@@ -99,7 +99,7 @@
 ## 暂不执行
 
 - 实现其他候选功能。
-- 实施 `VID-002`、配置开发者签名、发布渠道或外部服务。
+- 配置开发者签名、发布渠道或外部服务。
 
 ## 文档维护清单
 

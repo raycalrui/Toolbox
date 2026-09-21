@@ -8,7 +8,7 @@ App 用户界面从英文版开始开发；项目协作文档继续使用中文�
 
 首个本地 MVP 已完成：视频转换工具可以读取视频信息、批量排队，并按自定义参数通过 FFmpeg 和 VideoToolbox 导出。
 
-当前版本仅用于本地开发验证，依赖本机 Homebrew FFmpeg；尚未配置正式签名、App Sandbox、FFmpeg 内嵌分发或 GitHub 开源。
+当前版本仅用于本地开发验证，依赖本机安装的 FFmpeg；尚未配置正式签名、App Sandbox 或 GitHub 开源。产品方向确定为不内嵌 FFmpeg，缺少依赖时引导用户通过 Homebrew 安装。
 
 ## 本地开发
 
@@ -26,7 +26,7 @@ App 用户界面从英文版开始开发；项目协作文档继续使用中文�
 brew install ffmpeg
 ```
 
-App 会优先寻找 App 内嵌的 `ffmpeg`，本地开发阶段也会寻找 `/opt/homebrew/bin/ffmpeg` 和 `/usr/local/bin/ffmpeg`。
+App 当前寻找 `/opt/homebrew/bin/ffmpeg` 和 `/usr/local/bin/ffmpeg`。后续会在未检测到 FFmpeg 时显示安装说明和可复制的 Homebrew 命令。
 
 ## 产品方向
 
