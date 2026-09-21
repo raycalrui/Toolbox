@@ -25,11 +25,12 @@ struct TextDiffResultView: View {
                             }
                         }
                     }
-                    .frame(minWidth: 700, alignment: .leading)
+                    .frame(minWidth: 700, maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 6)
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .textBackgroundColor).opacity(0.55))
     }
 
@@ -49,6 +50,7 @@ struct TextDiffResultView: View {
                 side: .right
             )
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder

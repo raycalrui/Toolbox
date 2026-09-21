@@ -26,19 +26,21 @@ struct TextDiffView: View {
                     TextDiffEditorPane(title: "Original", text: $leftText) { url in
                         importFile(url, into: $leftText)
                     }
-                    .frame(minWidth: 280)
+                    .frame(minWidth: 280, maxWidth: .infinity, maxHeight: .infinity)
 
                     TextDiffEditorPane(title: "Revised", text: $rightText) { url in
                         importFile(url, into: $rightText)
                     }
-                    .frame(minWidth: 280)
+                    .frame(minWidth: 280, maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(minHeight: 180, idealHeight: 260)
+                .frame(maxWidth: .infinity, minHeight: 180, idealHeight: 260, maxHeight: .infinity)
 
                 TextDiffResultView(rows: rows, presentation: presentation)
-                    .frame(minHeight: 220)
+                    .frame(maxWidth: .infinity, minHeight: 220, maxHeight: .infinity)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle("Text Diff")
         .alert(item: $fileError) { error in
             Alert(
@@ -51,20 +53,26 @@ struct TextDiffView: View {
 
     private var toolbar: some View {
         HStack(spacing: 16) {
+            Text("Compare by")
+                .fixedSize()
             Picker("Compare by", selection: $granularity) {
                 ForEach(TextDiffGranularity.allCases) { mode in
                     Text(mode.rawValue).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
             .frame(width: 170)
 
+            Text("View")
+                .fixedSize()
             Picker("View", selection: $presentation) {
                 ForEach(TextDiffPresentation.allCases) { mode in
                     Text(mode.rawValue).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
             .frame(width: 240)
 
             Spacer()

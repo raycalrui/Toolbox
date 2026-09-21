@@ -35,6 +35,7 @@ struct TextDiffEditorPane: View {
                     .allowsHitTesting(false)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(nsColor: .textBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay {
@@ -53,5 +54,6 @@ struct TextDiffEditorPane: View {
             }
         }
         .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
