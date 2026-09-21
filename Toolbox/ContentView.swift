@@ -1,12 +1,21 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var selection = "video"
+
     var body: some View {
-        ContentUnavailableView {
-            Label("Toolbox", systemImage: "shippingbox")
-        } description: {
-            Text("请选择第一个要开发的工具")
+        NavigationSplitView {
+            List(selection: $selection) {
+                Section("创作") {
+                    Label("视频转换", systemImage: "film.stack")
+                        .tag("video")
+                }
+            }
+            .navigationTitle("Toolbox")
+            .navigationSplitViewColumnWidth(min: 180, ideal: 210)
+        } detail: {
+            VideoConverterView()
         }
-        .frame(minWidth: 720, minHeight: 480)
+        .frame(minWidth: 1120, minHeight: 680)
     }
 }

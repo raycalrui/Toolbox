@@ -4,9 +4,9 @@
 
 ## 当前状态
 
-项目处于首个 MVP 的范围确认阶段。已经建立本地 Git 仓库和最小 macOS SwiftUI Xcode 工程，但尚未实现任何工具功能。
+首个本地 MVP 已完成：视频转换工具可以读取视频信息、批量排队，并按自定义参数通过 FFmpeg 和 VideoToolbox 导出。
 
-首个 MVP 已确定为视频格式转换工具。下一步需要确定第一版的格式范围、编码后端、任务模式、预设内容和验收标准。
+当前版本仅用于本地开发验证，依赖本机 Homebrew FFmpeg；尚未配置正式签名、App Sandbox、FFmpeg 内嵌分发或 GitHub 开源。
 
 ## 本地开发
 
@@ -16,7 +16,15 @@
 - 最低系统版本：macOS 15.0
 - Swift：6.0
 
-用 Xcode 打开 `Toolbox.xcodeproj` 后即可构建运行。当前界面只是等待选择首个工具的占位页。
+用 Xcode 打开 `Toolbox.xcodeproj` 后即可构建运行，左侧选择“视频转换”进入当前工具。
+
+视频转换 MVP 需要本机安装 FFmpeg：
+
+```bash
+brew install ffmpeg
+```
+
+App 会优先寻找 App 内嵌的 `ffmpeg`，本地开发阶段也会寻找 `/opt/homebrew/bin/ffmpeg` 和 `/usr/local/bin/ffmpeg`。
 
 ## 产品方向
 
@@ -28,11 +36,15 @@
 
 ## 当前优先功能
 
-- 视频格式转换
-- 自定义分辨率、帧率、码率和编码器
-- 保存和管理导出预设
+- 批量添加、拖放和顺序转换视频
+- 读取分辨率、帧率、时长、编码和文件大小
+- 输出 MP4 / MOV
+- 使用 VideoToolbox 导出 H.264、HEVC 和 Apple ProRes 422
+- 自定义分辨率、帧率、视频码率与音频参数
+- 保存、更新和删除自定义导出预设
+- 预计输出大小、实时进度、取消任务及 Finder 定位
 
-以上能力正在确认 MVP 范围，尚未开始实现。
+以上能力已经完成本地 MVP 验证。转换在本机执行，不上传视频。
 
 ## 其他候选能力
 
