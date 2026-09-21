@@ -10,6 +10,7 @@ final class VideoConverterViewModel: ObservableObject {
     @Published var outputDirectory: URL?
     @Published var isConverting = false
     @Published var presentedError: String?
+    @Published private(set) var ffmpegDependencyStatus: FFmpegDependencyStatus
 
     let presetStore = PresetStore()
     private let engine = FFmpegEngine()
@@ -17,6 +18,7 @@ final class VideoConverterViewModel: ObservableObject {
 
     init() {
         defaultPreset = ConversionPreset.builtIns[0]
+        ffmpegDependencyStatus = FFmpegLocator.dependencyStatus()
     }
 
     var selectedItem: VideoItem? {
@@ -32,10 +34,19 @@ final class VideoConverterViewModel: ObservableObject {
         items.contains { $0.status.canStart }
     }
 
-    var isFFmpegAvailable: Bool { engine.executableURL != nil }
+    var isFFmpegAvailable: Bool { ffmpegDependencyStatus.executableURL != nil }
 
     var ffmpegStatus: String {
         isFFmpegAvailable ? "FFmpeg Ready" : "FFmpeg Not Found"
+    }
+
+    func refreshFFmpegAvailability() {
+        ffmpegDependencyStatus = FFmpegLocator.dependencyStatus()
+    }
+
+    func copyFFmpegInstallCommand() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString("brew install ffmpeg", forType: .string)
     }
 
     var estimatedOutputSize: String? {

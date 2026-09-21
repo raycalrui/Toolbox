@@ -55,6 +55,14 @@ struct VideoConverterView: View {
         VStack(spacing: 0) {
             header
             Divider()
+            if !model.isFFmpegAvailable {
+                FFmpegDependencyBanner(
+                    status: model.ffmpegDependencyStatus,
+                    copyCommand: model.copyFFmpegInstallCommand,
+                    checkAgain: model.refreshFFmpegAvailability
+                )
+                Divider()
+            }
             fileArea
             Divider()
             footer
@@ -177,6 +185,50 @@ struct VideoConverterView: View {
 
     private func inspectorWidth(for availableWidth: CGFloat) -> CGFloat {
         min(max(availableWidth * 0.35, 360), 420)
+    }
+}
+
+private struct FFmpegDependencyBanner: View {
+    let status: FFmpegDependencyStatus
+    let copyCommand: () -> Void
+    let checkAgain: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).fontWeight(.semibold)
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("brew install ffmpeg")
+                    .font(.caption.monospaced())
+                    .textSelection(.enabled)
+            }
+            Spacer()
+            if status == .homebrewMissing {
+                Link("Get Homebrew", destination: URL(string: "https://brew.sh")!)
+            }
+            Button("Copy Command", action: copyCommand)
+            Button("Check Again", action: checkAgain)
+                .buttonStyle(.borderedProminent)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(Color.orange.opacity(0.08))
+    }
+
+    private var title: String {
+        status == .homebrewMissing ? "Homebrew and FFmpeg Required" : "FFmpeg Required"
+    }
+
+    private var message: String {
+        if status == .homebrewMissing {
+            return "Install Homebrew from brew.sh, then run the command below. Toolbox never installs software automatically."
+        }
+        return "Install FFmpeg with Homebrew, then check again. Toolbox never installs software automatically."
     }
 }
 

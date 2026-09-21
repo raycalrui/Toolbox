@@ -1,22 +1,44 @@
 import Foundation
 
+enum FFmpegDependencyStatus: Equatable {
+    case ready(URL)
+    case ffmpegMissing
+    case homebrewMissing
+
+    var executableURL: URL? {
+        guard case let .ready(url) = self else { return nil }
+        return url
+    }
+}
+
+enum FFmpegLocator {
+    private static let ffmpegPaths = [
+        "/opt/homebrew/bin/ffmpeg",
+        "/usr/local/bin/ffmpeg"
+    ]
+
+    private static let homebrewPaths = [
+        "/opt/homebrew/bin/brew",
+        "/usr/local/bin/brew"
+    ]
+
+    static func dependencyStatus(fileManager: FileManager = .default) -> FFmpegDependencyStatus {
+        if let path = ffmpegPaths.first(where: fileManager.isExecutableFile(atPath:)) {
+            return .ready(URL(fileURLWithPath: path))
+        }
+        if homebrewPaths.contains(where: fileManager.isExecutableFile(atPath:)) {
+            return .ffmpegMissing
+        }
+        return .homebrewMissing
+    }
+}
+
 @MainActor
 final class FFmpegEngine {
     private var currentProcess: Process?
 
     var executableURL: URL? {
-        if let bundled = Bundle.main.url(forResource: "ffmpeg", withExtension: nil) {
-            return bundled
-        }
-
-        let candidates = [
-            "/opt/homebrew/bin/ffmpeg",
-            "/usr/local/bin/ffmpeg"
-        ]
-
-        return candidates
-            .map(URL.init(fileURLWithPath:))
-            .first { FileManager.default.isExecutableFile(atPath: $0.path) }
+        FFmpegLocator.dependencyStatus().executableURL
     }
 
     func cancel() {

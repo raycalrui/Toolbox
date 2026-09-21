@@ -6,7 +6,7 @@ App 用户界面从英文版开始开发；项目协作文档继续使用中文�
 
 ## 当前状态
 
-首个本地 MVP 已完成：视频转换工具可以读取视频信息、批量排队，并按自定义参数通过 FFmpeg 和 VideoToolbox 导出。
+本地多工具 MVP 已完成：除视频转换外，现已提供 Text Diff、UUID / Random String、Password Tools 和 Network Tools，并通过统一侧边栏切换。
 
 当前版本仅用于本地开发验证，依赖本机安装的 FFmpeg；尚未配置正式签名、App Sandbox 或 GitHub 开源。产品方向确定为不内嵌 FFmpeg，缺少依赖时引导用户通过 Homebrew 安装。
 
@@ -18,7 +18,7 @@ App 用户界面从英文版开始开发；项目协作文档继续使用中文�
 - 最低系统版本：macOS 15.0
 - Swift：6.0
 
-用 Xcode 打开 `Toolbox.xcodeproj` 后即可构建运行，左侧选择 “Video Converter” 进入当前工具。
+用 Xcode 打开 `Toolbox.xcodeproj` 后即可构建运行，通过左侧分组侧边栏选择工具。
 
 视频转换 MVP 需要本机安装 FFmpeg：
 
@@ -26,7 +26,7 @@ App 用户界面从英文版开始开发；项目协作文档继续使用中文�
 brew install ffmpeg
 ```
 
-App 当前寻找 `/opt/homebrew/bin/ffmpeg` 和 `/usr/local/bin/ffmpeg`。后续会在未检测到 FFmpeg 时显示安装说明和可复制的 Homebrew 命令。
+App 当前寻找 `/opt/homebrew/bin/ffmpeg` 和 `/usr/local/bin/ffmpeg`。未检测到依赖时会区分 Homebrew / FFmpeg 缺失状态，显示安装说明、可复制命令和重新检测入口。
 
 ## 产品方向
 
@@ -52,15 +52,16 @@ App 当前寻找 `/opt/homebrew/bin/ffmpeg` 和 `/usr/local/bin/ffmpeg`。后续
 
 以上能力已经完成本地 MVP 验证。转换在本机执行，不上传视频。
 
+## 已实现工具
+
+- **Text Diff**：左右文本编辑、逐行或逐词对比、并排或统一结果、新增/删除/修改高亮、UTF-8 文本文件拖入和结果复制。
+- **UUID & Random String**：UUID v4、自定义长度与字符组、批量生成、单项或全部复制，使用系统安全随机源。
+- **Password Tools**：强密码批量生成、排除易混淆字符、本地密码强度与改进建议；密码不保存、不上传。
+- **Network Tools**：本机接口与地址、公网 IPv4/IPv6、IPv4/IPv6 Ping、IP/CIDR 规范化及网段范围解析。公网地址仅在用户点击 Refresh 后向 `ipify.org` 查询，结果不持久化。
+
 ## 其他候选能力
 
-- 文本差异对比
-- UUID 与随机字符串生成
-- 公网及局域网 IP 查看
-- Ping 测试
-- IPv4 / IPv6 信息解析
 - 剪贴板历史
-- 密码生成与密码强度检查
 - 防止 Mac 睡眠
 - 收藏常用工具
 - Finder 右键扩展
