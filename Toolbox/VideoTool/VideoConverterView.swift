@@ -2,10 +2,21 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct VideoConverterView: View {
+    let finderAction: FinderPendingAction?
+    let onFinderActionHandled: () -> Void
+
     @StateObject private var model = VideoConverterViewModel()
     @State private var presetName = ""
     @State private var showingPresetName = false
     @State private var isInspectorVisible = true
+
+    init(
+        finderAction: FinderPendingAction? = nil,
+        onFinderActionHandled: @escaping () -> Void = {}
+    ) {
+        self.finderAction = finderAction
+        self.onFinderActionHandled = onFinderActionHandled
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -48,6 +59,11 @@ struct VideoConverterView: View {
             }
             .padding(24)
             .frame(width: 360)
+        }
+        .onChange(of: finderAction?.id, initial: true) { _, actionID in
+            guard actionID != nil, let finderAction else { return }
+            model.add(urls: finderAction.urls)
+            onFinderActionHandled()
         }
     }
 

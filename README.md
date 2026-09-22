@@ -6,7 +6,7 @@ App 用户界面从英文版开始开发；项目协作文档继续使用中文�
 
 ## 当前状态
 
-本地多工具 MVP 已完成：除视频转换外，现已提供 Text Diff、UUID / Random String、Password Tools 和 Network Tools，并通过统一侧边栏切换。
+本地多工具 MVP 已完成：除视频转换外，现已提供 Text Diff、UUID / Random String、Password Tools、Network Tools、Clipboard History、Sleep Prevention 和 Cloudflare DDNS，并通过统一侧边栏及 Favorites 快速切换。
 
 当前版本仅用于本地开发验证，依赖本机安装的 FFmpeg；尚未配置正式签名、App Sandbox 或 GitHub 开源。产品方向确定为不内嵌 FFmpeg，缺少依赖时引导用户通过 Homebrew 安装。
 
@@ -58,16 +58,18 @@ App 当前寻找 `/opt/homebrew/bin/ffmpeg` 和 `/usr/local/bin/ffmpeg`。未检
 - **UUID & Random String**：UUID v4、自定义长度与字符组、批量生成、单项或全部复制，使用系统安全随机源。
 - **Password Tools**：强密码批量生成、排除易混淆字符、本地密码强度与改进建议；密码不保存、不上传。
 - **Network Tools**：本机接口与地址、公网 IPv4/IPv6、IPv4/IPv6 Ping、IP/CIDR 规范化及网段范围解析。公网地址仅在用户点击 Refresh 后向 `ipify.org` 查询，结果不持久化。
+- **Clipboard History**：本地文本剪贴板历史、搜索、固定、复制、删除、暂停、保存期限和数量上限；忽略 Concealed / Transient 类型。
+- **Sleep Prevention**：使用 macOS 电源管理 API 阻止系统或显示器睡眠，支持定时关闭和状态倒计时。
+- **Favorites**：为任意工具添加星标，并在侧边栏顶部快速访问；设置仅保存在本机。
+- **Finder Services**：从 Finder 右键 Services 将文本文件发送至 Text Diff，或将视频发送至 Video Converter。
+- **Cloudflare DDNS**：分别更新 A / AAAA 记录，支持 Keychain Token、手动或 App 运行期间定时更新，以及协议级状态与错误信息。
 
-## 其他候选能力
+## 当前边界
 
-- 剪贴板历史
-- 防止 Mac 睡眠
-- 收藏常用工具
-- Finder 右键扩展
-- Cloudflare IPv4 / IPv6 DDNS
-
-以上均为候选需求，不代表已经实现。实际状态以 [`TODO.md`](TODO.md) 为准。
+- Clipboard History 无法可靠判断第三方 App 写入的无标记纯文本是否为密码。
+- Cloudflare DDNS 的定时任务仅在 Toolbox 运行期间生效，尚未增加登录项辅助进程。
+- Finder 入口当前采用 macOS Services；本地未签名构建可能需要刷新服务注册，尚未建立独立 Finder Sync Extension Target。
+- 尚未配置正式签名、App Sandbox、安装包或 GitHub 开源发布。
 
 ## 项目文档
 

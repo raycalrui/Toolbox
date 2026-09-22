@@ -97,3 +97,35 @@
 - 背景：显示公网 IPv4 / IPv6 需要访问外部回显服务，打开工具时自动查询会产生不必要的网络请求。
 - 结论：使用 ipify 官方 IPv4 与 IPv6 HTTPS 端点，但只在用户点击 Refresh 后查询；界面明确服务方，结果不写入磁盘。
 - 影响：Network Tools 初次打开仅读取本地接口；外部查询具有显式用户动作和独立错误状态。
+
+## DEC-013：系统工具状态由 App 根层持有
+
+- 日期：2026-09-22
+- 状态：已确认
+- 背景：剪贴板监听、睡眠 assertion 和 DDNS 定时器不应因用户切换侧边栏工具而停止。
+- 结论：由 App 根视图持有 Clipboard、Sleep 和 DDNS controller，功能页面仅观察和编辑对应状态。
+- 影响：侧边栏切换不会中断任务；关闭 App 后释放睡眠 assertion，并停止剪贴板监听和 DDNS 定时器。
+
+## DEC-014：敏感凭据与普通设置分离保存
+
+- 日期：2026-09-22
+- 状态：已确认
+- 背景：Cloudflare API Token 属于敏感凭据，剪贴板历史和工具偏好也需要明确本地数据边界。
+- 结论：Cloudflare Token 只存入 macOS Keychain；非敏感 DDNS 配置、剪贴板历史及收藏偏好保存于本机 UserDefaults，不上传或同步。
+- 影响：删除 Token 不影响普通 DDNS 配置；剪贴板历史遵循本地保存期限和清除机制。
+
+## DEC-015：Finder MVP 先采用 NSServices
+
+- 日期：2026-09-22
+- 状态：已确认
+- 背景：本地 MVP 尚未配置正式签名和 App Sandbox，但需要尽快提供 Finder 右键入口。
+- 结论：先通过主 App 的 NSServices 提供文本对比和视频转换动作，并由持久化 inbox 路由到对应工具。
+- 影响：入口通常位于 Finder 的 Services 或 Quick Actions；正式分发前再评估独立 Finder Sync Extension Target。
+
+## DEC-016：Favorites 仅使用本机偏好
+
+- 日期：2026-09-22
+- 状态：已确认
+- 背景：当前需要快速访问常用工具，但尚未建立账号或同步系统。
+- 结论：侧边栏星标和 Favorites 区域使用本机 UserDefaults 保存，不提供云同步或独立首页。
+- 影响：实现简单且离线；不同 Mac 之间不会同步收藏顺序和状态。

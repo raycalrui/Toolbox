@@ -12,7 +12,7 @@
 
 ## 当前里程碑
 
-多工具本地 MVP 已完成：视频转换、Text Diff、UUID / Random String、Password Tools 与 Network Tools 均已集成并通过构建及核心路径验证。
+多工具本地 MVP 已完成：视频转换、Text Diff、UUID / Random String、Password Tools、Network Tools、Clipboard History、Sleep Prevention、Favorites、Finder Services 与 Cloudflare DDNS 均已集成并通过构建及核心路径验证。
 
 工程基础设施已经完成：本地 Git 仓库和最小 macOS SwiftUI Xcode 工程已建立。
 
@@ -68,11 +68,15 @@
   - 已实现 IPv4 / IPv6 规范化、CIDR 前缀、网络地址、范围、地址数量和常见作用域识别。
   - 验证：IPv4 `/24`、IPv6 `/64`、私有 / 文档地址作用域及非法输入测试通过。
 
-- **NET-004 `[候选]` Cloudflare IPv4 / IPv6 DDNS**
+- **NET-004 `[已完成]` Cloudflare IPv4 / IPv6 DDNS**
   - 连接 Cloudflare，根据当前公网地址更新指定 DNS 记录。
   - 同时考虑 IPv4 A 记录与 IPv6 AAAA 记录。
   - 凭据必须存放于 macOS Keychain，不进入日志或普通配置。
-  - 待明确：API Token 权限、Zone/Record 选择、自动更新周期、后台运行、失败提醒和多记录支持。
+  - API Token 仅保存在 macOS Keychain；Zone ID、记录名称、Record ID 和非敏感设置保存在本机。
+  - A / AAAA 可独立启用，分别通过 ipify 获取并校验公网地址，再调用 Cloudflare PATCH API 更新记录。
+  - 支持手动更新、5 / 15 / 30 / 60 分钟定时、Proxy 开关、协议级状态和错误信息。
+  - 自动更新仅在 Toolbox 运行期间生效；退出 App 后持续运行的登录项辅助进程不属于本轮 MVP。
+  - 验证：Swift 6 Debug 构建通过，Keychain 和 Cloudflare 响应处理完成静态检查；未使用真实用户凭据执行外部 DNS 写入。
 
 ### 隐私与安全
 
@@ -89,26 +93,36 @@
 
 ### 系统与效率
 
-- **SYS-001 `[候选]` 剪贴板历史**
+- **SYS-001 `[已完成]` 剪贴板历史**
   - 记录并搜索近期剪贴板内容。
-  - 设计前必须明确保存期限、忽略 App、敏感内容排除、固定项目和一键清空机制。
+  - 支持搜索、复制、删除、固定、暂停记录、清除未固定项目或全部清除。
+  - 支持 25 / 50 / 100 / 250 条上限，以及 1 天 / 1 周 / 1 月 / 永久保存期限；默认 100 条和 1 周。
+  - 数据仅保存在本机，忽略空白、重复及带 Concealed / Transient 标记的剪贴板内容。
+  - 已知边界：第三方 App 若把密码作为无敏感标记的普通文本写入剪贴板，macOS 无法可靠识别其来源。
 
-- **SYS-002 `[候选]` 睡眠阻止开关**
+- **SYS-002 `[已完成]` 睡眠阻止开关**
   - 临时阻止 Mac 自动睡眠，并明确显示启用状态。
-  - 待明确：仅阻止系统睡眠或同时阻止显示器睡眠、定时关闭、菜单栏入口。
+  - 支持阻止系统睡眠或阻止显示器睡眠，使用 macOS IOPMAssertion 公共 API。
+  - 支持 30 分钟、1 小时、2 小时和持续开启，显示活动状态与秒级倒计时。
+  - 停用、到期或 controller 销毁时释放 assertion；菜单栏入口不属于本轮 MVP。
 
-- **UX-001 `[候选]` 收藏常用工具**
+- **UX-001 `[已完成]` 收藏常用工具**
   - 收藏、取消收藏并快速访问常用工具。
-  - 待明确：首页布局、排序方式以及是否同步设置。
+  - 每个侧边栏工具提供星标按钮与右键菜单，收藏项目显示在顶部 Favorites 区域。
+  - 收藏列表保存到本机 UserDefaults，不进行云同步；独立首页和拖动排序不属于本轮 MVP。
 
-- **SYS-003 `[候选]` Finder 右键扩展**
+- **SYS-003 `[已完成]` Finder 右键入口**
   - 从 Finder 对选中文件调用适用的工具。
-  - 待明确：首批右键动作、扩展形态、沙盒与权限策略。
+  - 通过 macOS NSServices 提供 `Compare Text in Toolbox` 与 `Convert Video in Toolbox`。
+  - 文本动作接收最多两个文本文件并路由到 Text Diff；视频动作接收多个视频并路由到 Video Converter。
+  - 入口通常显示于 Finder 右键菜单的 Services，部分系统版本可能归类到 Quick Actions。
+  - 本地未签名构建需要先运行或安装 App，并可能需要刷新系统服务注册或重新登录；独立 Finder Sync Extension Target 不属于本轮 MVP。
 
 ## 暂不执行
 
-- 实现其他候选功能。
 - 配置开发者签名、发布渠道或外部服务。
+- 为 DDNS 增加退出 App 后仍运行的登录项辅助进程。
+- 将 Finder Services 改为独立 Finder Sync Extension，或增加菜单栏常驻入口。
 
 ## 文档维护清单
 

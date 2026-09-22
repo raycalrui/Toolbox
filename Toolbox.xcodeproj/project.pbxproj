@@ -10,8 +10,21 @@
 		A10000000000000000000001 /* Toolbox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Toolbox.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A10000000000000000000010 /* Exceptions for "Toolbox" folder in "Toolbox" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A10000000000000000000006 /* Toolbox */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A10000000000000000000002 /* Toolbox */ = {
+			exceptions = (
+				A10000000000000000000010 /* Exceptions for "Toolbox" folder in "Toolbox" target */,
+			);
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Toolbox;
 			sourceTree = "<group>";
@@ -251,9 +264,8 @@
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Toolbox;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Toolbox/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -277,9 +289,8 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Toolbox;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Toolbox/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

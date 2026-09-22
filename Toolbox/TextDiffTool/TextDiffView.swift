@@ -2,11 +2,22 @@ import AppKit
 import SwiftUI
 
 struct TextDiffView: View {
+    let finderAction: FinderPendingAction?
+    let onFinderActionHandled: () -> Void
+
     @State private var leftText = ""
     @State private var rightText = ""
     @State private var granularity: TextDiffGranularity = .line
     @State private var presentation: TextDiffPresentation = .sideBySide
     @State private var fileError: FileImportError?
+
+    init(
+        finderAction: FinderPendingAction? = nil,
+        onFinderActionHandled: @escaping () -> Void = {}
+    ) {
+        self.finderAction = finderAction
+        self.onFinderActionHandled = onFinderActionHandled
+    }
 
     private var rows: [TextDiffRow] {
         TextDiffEngine.compare(
@@ -48,6 +59,11 @@ struct TextDiffView: View {
                 message: Text(error.message),
                 dismissButton: .default(Text("OK"))
             )
+        }
+        .onChange(of: finderAction?.id, initial: true) { _, actionID in
+            guard actionID != nil, let finderAction else { return }
+            importFinderFiles(finderAction.urls)
+            onFinderActionHandled()
         }
     }
 
@@ -122,6 +138,14 @@ struct TextDiffView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(TextDiffEngine.copyableResult(from: rows), forType: .string)
+    }
+
+    private func importFinderFiles(_ urls: [URL]) {
+        guard let first = urls.first else { return }
+        importFile(first, into: $leftText)
+        if urls.count > 1 {
+            importFile(urls[1], into: $rightText)
+        }
     }
 }
 
