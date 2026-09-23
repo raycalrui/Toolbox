@@ -82,16 +82,6 @@ struct CloudflareDDNSView: View {
         return GroupBox("\(family.recordType) Record (\(family.rawValue))") {
             VStack(alignment: .leading, spacing: 12) {
                 Toggle("Update this record", isOn: record.isEnabled)
-                LabeledContent("Record name") {
-                    TextField(family == .ipv4 ? "home.example.com" : "home-v6.example.com", text: record.name)
-                        .textFieldStyle(.roundedBorder)
-                        .disabled(!record.wrappedValue.isEnabled)
-                }
-                LabeledContent("Record ID") {
-                    SecureField("Cloudflare DNS Record ID", text: record.recordID)
-                        .textFieldStyle(.roundedBorder)
-                        .disabled(!record.wrappedValue.isEnabled)
-                }
                 LabeledContent("Address source") {
                     Picker("Address source", selection: record.addressSource) {
                         ForEach(DDNSAddressSource.allCases) { source in
@@ -99,12 +89,24 @@ struct CloudflareDDNSView: View {
                         }
                     }
                     .labelsHidden()
-                    .disabled(!record.wrappedValue.isEnabled)
                 }
-                if record.wrappedValue.isEnabled && record.wrappedValue.addressSource == .networkInterface {
+                if record.wrappedValue.addressSource == .networkInterface {
                     interfaceSettings(for: family, record: record)
-                } else if record.wrappedValue.isEnabled {
+                } else {
                     publicAddressSettings(for: family)
+                }
+                LabeledContent("Record name") {
+                    TextField(family == .ipv4 ? "home.example.com" : "home-v6.example.com", text: record.name)
+                        .textFieldStyle(.roundedBorder)
+                }
+                LabeledContent("Record ID") {
+                    SecureField("Cloudflare DNS Record ID", text: record.recordID)
+                        .textFieldStyle(.roundedBorder)
+                }
+                if !record.wrappedValue.isEnabled {
+                    Text("This record is not updating. Configure it here, then turn on Update this record when ready.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
             .padding(6)

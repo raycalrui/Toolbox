@@ -36,3 +36,4 @@
 - 新增 Finder Services：可从 Finder 右键菜单将文本文件发送至 Text Diff，或将视频发送至 Video Converter。
 - 新增 Cloudflare DDNS：API Token 存入 Keychain，支持 A / AAAA 独立配置、手动或 App 运行期间定时更新、Proxy 选项及协议级状态。
 - Cloudflare DDNS 的 A / AAAA 记录现可各自选择公网检测或本机网络接口作为地址来源；公网地址可先预览，接口模式自动读取最新地址、过滤临时 IPv6，并在多地址或接口不可用时明确提示。
+- 修复 DDNS 记录未启用时地址来源和接口选单无法操作的问题；现在可先完成配置，再启用记录更新。
