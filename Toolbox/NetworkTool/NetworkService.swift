@@ -58,10 +58,19 @@ struct NetworkService: NetworkServiceProtocol {
             let utf8 = host.prefix { $0 != 0 }.map(UInt8.init(bitPattern:))
             let address = String(decoding: utf8, as: UTF8.self)
             let family: NetworkAddressFamily = familyValue == AF_INET ? .ipv4 : .ipv6
+            var ipv6Flags: Int32?
+            if familyValue == AF_INET6 {
+                var queriedFlags: Int32 = 0
+                let result = socketAddress.withMemoryRebound(to: sockaddr_in6.self, capacity: 1) {
+                    ToolboxIPv6AddressFlags(item.ifa_name, $0, &queriedFlags)
+                }
+                if result == 0 { ipv6Flags = queriedFlags }
+            }
             values.append(NetworkInterfaceAddress(
                 name: String(cString: item.ifa_name),
                 family: family,
-                address: address
+                address: address,
+                ipv6Flags: ipv6Flags
             ))
         }
         return values.sorted {

@@ -18,19 +18,26 @@ final class CloudflareDDNSViewModel: ObservableObject {
     @Published private(set) var ipv6Status: DDNSProtocolStatus = .idle
     @Published private(set) var isUpdating = false
     @Published private(set) var nextUpdateAt: Date?
+    @Published private(set) var localAddresses: [NetworkInterfaceAddress] = []
+    @Published private(set) var localAddressError: String?
+    @Published private(set) var publicAddressPreviews: [DDNSAddressFamily: RemoteValueState] = [:]
 
     private let service: any CloudflareDDNSServiceProtocol
+    private let networkService: any NetworkServiceProtocol
     private let keychain: DDNSKeychainStore
     private let configurationStore: DDNSConfigurationStore
     private var updateTask: Task<Void, Never>?
     private var scheduleTask: Task<Void, Never>?
+    private var previewTasks: [DDNSAddressFamily: Task<Void, Never>] = [:]
 
     init(
         service: any CloudflareDDNSServiceProtocol = CloudflareDDNSService(),
+        networkService: any NetworkServiceProtocol = NetworkService(),
         keychain: DDNSKeychainStore = DDNSKeychainStore(),
         configurationStore: DDNSConfigurationStore = DDNSConfigurationStore()
     ) {
         self.service = service
+        self.networkService = networkService
         self.keychain = keychain
         self.configurationStore = configurationStore
         configuration = configurationStore.loadConfiguration()
@@ -41,6 +48,7 @@ final class CloudflareDDNSViewModel: ObservableObject {
     deinit {
         updateTask?.cancel()
         scheduleTask?.cancel()
+        previewTasks.values.forEach { $0.cancel() }
     }
 
     func start() {
@@ -85,6 +93,7 @@ final class CloudflareDDNSViewModel: ObservableObject {
         isUpdating = true
         tokenMessage = nil
         let service = service
+        let resolver = DDNSAddressResolver(publicAddressService: service, networkService: networkService)
         let keychain = keychain
         let configuration = configuration
 
@@ -96,10 +105,10 @@ final class CloudflareDDNSViewModel: ObservableObject {
                 try Self.validate(configuration)
 
                 async let ipv4Result = Self.update(
-                    .ipv4, configuration: configuration, token: token, service: service
+                    .ipv4, configuration: configuration, token: token, service: service, resolver: resolver
                 )
                 async let ipv6Result = Self.update(
-                    .ipv6, configuration: configuration, token: token, service: service
+                    .ipv6, configuration: configuration, token: token, service: service, resolver: resolver
                 )
                 if configuration.ipv4.isEnabled { ipv4Status = .updating }
                 if configuration.ipv6.isEnabled { ipv6Status = .updating }
@@ -116,6 +125,49 @@ final class CloudflareDDNSViewModel: ObservableObject {
             }
             isUpdating = false
             scheduleNextDate()
+        }
+    }
+
+    func refreshLocalInterfaces() {
+        do {
+            let resolver = DDNSAddressResolver(publicAddressService: service, networkService: networkService)
+            localAddresses = try resolver.localAddresses()
+            localAddressError = nil
+        } catch {
+            localAddresses = []
+            localAddressError = error.localizedDescription
+        }
+    }
+
+    func availableInterfaces(for family: DDNSAddressFamily) -> [String] {
+        Array(Set(localAddresses.filter { $0.family == family.networkFamily }.map(\.name)))
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
+
+    func eligibleAddresses(for family: DDNSAddressFamily) -> [NetworkInterfaceAddress] {
+        let record = configuration.record(for: family)
+        return DDNSAddressResolver.candidates(
+            in: localAddresses,
+            for: family,
+            interfaceName: record.interfaceName
+        )
+    }
+
+    func checkPublicAddress(for family: DDNSAddressFamily) {
+        previewTasks[family]?.cancel()
+        publicAddressPreviews[family] = .loading
+        let service = service
+        previewTasks[family] = Task { [weak self] in
+            let result: RemoteValueState
+            do {
+                result = .loaded(try await service.fetchPublicAddress(for: family))
+            } catch is CancellationError {
+                return
+            } catch {
+                result = .failed(error.localizedDescription)
+            }
+            guard !Task.isCancelled, let self else { return }
+            publicAddressPreviews[family] = result
         }
     }
 
@@ -160,12 +212,13 @@ final class CloudflareDDNSViewModel: ObservableObject {
         _ family: DDNSAddressFamily,
         configuration: DDNSConfiguration,
         token: String,
-        service: any CloudflareDDNSServiceProtocol
+        service: any CloudflareDDNSServiceProtocol,
+        resolver: DDNSAddressResolver
     ) async -> DDNSProtocolStatus {
         let record = configuration.record(for: family)
         guard record.isEnabled else { return .idle }
         do {
-            let address = try await service.fetchPublicAddress(for: family)
+            let address = try await resolver.resolve(for: family, record: record)
             try await service.updateRecord(
                 zoneID: configuration.zoneID.trimmingCharacters(in: .whitespacesAndNewlines),
                 recordID: record.recordID.trimmingCharacters(in: .whitespacesAndNewlines),

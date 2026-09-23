@@ -24,13 +24,14 @@ struct CloudflareDDNSView: View {
                 .frame(maxWidth: .infinity)
             }
         }
+        .task { model.refreshLocalInterfaces() }
     }
 
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Cloudflare DDNS").font(.title2.bold())
-                Text("Keep A and AAAA records synchronized with your public addresses.")
+                Text("Keep A and AAAA records synchronized with the addresses you choose.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -91,8 +92,109 @@ struct CloudflareDDNSView: View {
                         .textFieldStyle(.roundedBorder)
                         .disabled(!record.wrappedValue.isEnabled)
                 }
+                LabeledContent("Address source") {
+                    Picker("Address source", selection: record.addressSource) {
+                        ForEach(DDNSAddressSource.allCases) { source in
+                            Text(source.label).tag(source)
+                        }
+                    }
+                    .labelsHidden()
+                    .disabled(!record.wrappedValue.isEnabled)
+                }
+                if record.wrappedValue.isEnabled && record.wrappedValue.addressSource == .networkInterface {
+                    interfaceSettings(for: family, record: record)
+                } else if record.wrappedValue.isEnabled {
+                    publicAddressSettings(for: family)
+                }
             }
             .padding(6)
+        }
+    }
+
+    private func publicAddressSettings(for family: DDNSAddressFamily) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Button("Check IP", systemImage: "arrow.clockwise") {
+                model.checkPublicAddress(for: family)
+            }
+            .disabled(model.publicAddressPreviews[family] == .loading)
+            switch model.publicAddressPreviews[family] ?? .idle {
+            case .idle:
+                Text("Check the public address before updating this record.")
+                    .foregroundStyle(.secondary)
+            case .loading:
+                ProgressView().controlSize(.small)
+                Text("Checking public \(family.rawValue)…")
+                    .foregroundStyle(.secondary)
+            case .loaded(let address):
+                Text(address)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+            case .failed(let message):
+                Text(message).foregroundStyle(.orange)
+            }
+        }
+        .font(.caption)
+    }
+
+    private func interfaceSettings(
+        for family: DDNSAddressFamily,
+        record: Binding<DDNSRecordConfiguration>
+    ) -> some View {
+        let interfaces = model.availableInterfaces(for: family)
+        let candidates = model.eligibleAddresses(for: family)
+        return VStack(alignment: .leading, spacing: 10) {
+            LabeledContent("Network interface") {
+                HStack {
+                    Picker("Network interface", selection: record.interfaceName) {
+                        Text("Select an interface").tag("")
+                        if !record.wrappedValue.interfaceName.isEmpty &&
+                            !interfaces.contains(record.wrappedValue.interfaceName) {
+                            Text("\(record.wrappedValue.interfaceName) (unavailable)")
+                                .tag(record.wrappedValue.interfaceName)
+                        }
+                        ForEach(interfaces, id: \.self) { name in
+                            Text(name).tag(name)
+                        }
+                    }
+                    .labelsHidden()
+                    Button("Refresh Interfaces", systemImage: "arrow.clockwise", action: model.refreshLocalInterfaces)
+                        .labelStyle(.iconOnly)
+                        .help("Refresh local network interfaces")
+                }
+            }
+            if let error = model.localAddressError {
+                Text(error).foregroundStyle(.orange).font(.caption)
+            } else if !record.wrappedValue.interfaceName.isEmpty {
+                if candidates.isEmpty {
+                    Text("No usable public \(family.rawValue) address is available on \(record.wrappedValue.interfaceName).")
+                        .foregroundStyle(.orange)
+                        .font(.caption)
+                } else if candidates.count == 1 {
+                    LabeledContent("Current address") {
+                        Text(candidates[0].address)
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+                    }
+                } else {
+                    LabeledContent("Address") {
+                        Picker("Address", selection: record.preferredAddress) {
+                            Text("Select an address").tag("")
+                            if !record.wrappedValue.preferredAddress.isEmpty &&
+                                !candidates.contains(where: { $0.address == record.wrappedValue.preferredAddress }) {
+                                Text("Previously selected address (unavailable)")
+                                    .tag(record.wrappedValue.preferredAddress)
+                            }
+                            ForEach(candidates) { candidate in
+                                Text(candidate.address).tag(candidate.address)
+                            }
+                        }
+                        .labelsHidden()
+                    }
+                    Text("Multiple usable addresses are present. Select the one to publish in DNS.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
     }
 
@@ -140,7 +242,7 @@ struct CloudflareDDNSView: View {
                 Text("Not updated").foregroundStyle(.secondary)
             case .updating:
                 ProgressView().controlSize(.small)
-                Text("Fetching public address and updating Cloudflare…").foregroundStyle(.secondary)
+                Text("Resolving the selected address and updating Cloudflare…").foregroundStyle(.secondary)
             case .success(let address, let date):
                 Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
                 Text(address).font(.system(.body, design: .monospaced)).textSelection(.enabled)

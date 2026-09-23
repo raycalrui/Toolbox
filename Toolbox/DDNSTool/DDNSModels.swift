@@ -6,8 +6,22 @@ enum DDNSAddressFamily: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var id: Self { self }
     var recordType: String { self == .ipv4 ? "A" : "AAAA" }
+    var networkFamily: NetworkAddressFamily { self == .ipv4 ? .ipv4 : .ipv6 }
     var ipifyURL: URL {
         URL(string: self == .ipv4 ? "https://api.ipify.org" : "https://api6.ipify.org")!
+    }
+}
+
+enum DDNSAddressSource: String, Codable, CaseIterable, Identifiable, Sendable {
+    case publicLookup
+    case networkInterface
+
+    var id: Self { self }
+    var label: String {
+        switch self {
+        case .publicLookup: "Detect public IP (ipify.org)"
+        case .networkInterface: "Local network interface"
+        }
     }
 }
 
@@ -15,6 +29,25 @@ struct DDNSRecordConfiguration: Codable, Equatable, Sendable {
     var isEnabled = false
     var name = ""
     var recordID = ""
+    var addressSource: DDNSAddressSource = .publicLookup
+    var interfaceName = ""
+    var preferredAddress = ""
+
+    private enum CodingKeys: String, CodingKey {
+        case isEnabled, name, recordID, addressSource, interfaceName, preferredAddress
+    }
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
+        name = try container.decode(String.self, forKey: .name)
+        recordID = try container.decode(String.self, forKey: .recordID)
+        addressSource = try container.decodeIfPresent(DDNSAddressSource.self, forKey: .addressSource) ?? .publicLookup
+        interfaceName = try container.decodeIfPresent(String.self, forKey: .interfaceName) ?? ""
+        preferredAddress = try container.decodeIfPresent(String.self, forKey: .preferredAddress) ?? ""
+    }
 }
 
 struct DDNSConfiguration: Codable, Equatable, Sendable {
@@ -53,6 +86,9 @@ enum DDNSError: LocalizedError, Sendable {
     case noRecordsEnabled
     case incompleteRecord(DDNSAddressFamily)
     case invalidPublicAddress(DDNSAddressFamily)
+    case missingInterface(DDNSAddressFamily)
+    case noEligibleInterfaceAddress(DDNSAddressFamily, String)
+    case ambiguousInterfaceAddress(DDNSAddressFamily, String)
     case invalidResponse
     case requestFailed(String)
     case keychain(OSStatus)
@@ -64,6 +100,9 @@ enum DDNSError: LocalizedError, Sendable {
         case .noRecordsEnabled: "Enable at least one DNS record."
         case .incompleteRecord(let family): "Enter both the record name and Record ID for \(family.rawValue)."
         case .invalidPublicAddress(let family): "ipify returned an invalid \(family.rawValue) address."
+        case .missingInterface(let family): "Select a network interface for \(family.rawValue)."
+        case .noEligibleInterfaceAddress(let family, let name): "No usable public \(family.rawValue) address is available on \(name)."
+        case .ambiguousInterfaceAddress(let family, let name): "Multiple public \(family.rawValue) addresses are available on \(name). Select one in the record settings."
         case .invalidResponse: "The server returned an invalid response."
         case .requestFailed(let message): message
         case .keychain(let status): "Keychain operation failed (\(status))."
