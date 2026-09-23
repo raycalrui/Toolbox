@@ -68,7 +68,7 @@ App 当前寻找 `/opt/homebrew/bin/ffmpeg` 和 `/usr/local/bin/ffmpeg`。未检
 
 - Clipboard History 无法可靠判断第三方 App 写入的无标记纯文本是否为密码；超过 20 MB 的图片不会被记录。
 - Cloudflare DDNS 的定时任务仅在 Toolbox 运行期间生效，尚未增加登录项辅助进程。
-- DDNS 的 ip.czl.net 来源已接入并通过本地构建，但尚未获准从这台 Mac 向该域名发送请求，因此实时可用性未验证。切换回显服务也不能保证绕过系统代理或 VPN；更新前应使用 Check IP 核对结果。
+- DDNS 的 ip.czl.net 来源在首次手动 Check IP 时显示笼统的无效 IPv4 错误；现已按官方建议强制 IPv4 连接并细分错误，修复后的版本通过本地构建，仍待用户在 App 内复测。切换回显服务也不能保证绕过系统代理或 VPN；更新前应使用 Check IP 核对结果。
 - 若所选接口出现多个合格的公网地址，需要在 DDNS 页面指定其中一个；如果该地址后来消失且仍有多个候选，更新会暂停并提示重新选择。
 - Finder 入口当前采用 macOS Services；本地未签名构建可能需要刷新服务注册，尚未建立独立 Finder Sync Extension Target。
 - 尚未配置正式签名、App Sandbox、安装包或 GitHub 开源发布。

@@ -91,7 +91,9 @@
   - A 记录的 Address source 已增加 `ip.czl.net` HTTPS API 选项，保留原有 ipify 和本机接口；AAAA 记录仍只显示适用来源。旧配置仍默认 ipify。
   - Check IP 与实际 DDNS 更新使用同一选定来源；切换来源时清除旧预览。服务响应必须包含成功代码、IPv4 标记和合法 IPv4 地址；失败时不静默回退到 ipify，也不更新该记录。
   - 本机实测：ipify 默认网络路径和直连路径均返回有效且相同的 IPv4；`4.ipw.cn` HTTPS 握手失败、HTTP 未返回有效内容，且官方仅允许个人测试学习，因此未加入选单。
-  - 待验证：`ip.czl.net` 官方提供 HTTPS `/api/query` 接口，但向该域名发送实际请求会暴露当前公网 IPv4；自动权限审核要求用户明确授权此具体目的地，本机尚未实测。更换域名也不能保证绕过系统代理或全局 VPN/TUN，更新前应核对 Check IP 结果。
+  - 用户在 App 内首次 Check IP 收到笼统的无效 IPv4 提示。官方文档表明 `/api/query` 按请求实际使用的地址族返回结果，因此可能是双栈连接选到 IPv6，也可能是服务错误；旧提示无法区分。
+  - 修复：ip.czl.net 查询改用 macOS 自带 `curl --ipv4` 强制 IPv4 连接；服务错误码、非 JSON、无地址及仍返回 IPv6 分别显示英文错误。修复版 Debug 构建通过，尚待用户在 App 内复测。自动权限审核仍未允许 Agent 直接向 `ip.czl.net` 请求。
+  - 更换域名或强制 IPv4 连接不能保证绕过系统代理或全局 VPN/TUN，更新前应核对 Check IP 结果。
 
 ### 隐私与安全
 

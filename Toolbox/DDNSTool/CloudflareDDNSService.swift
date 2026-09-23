@@ -23,13 +23,19 @@ struct CloudflareDDNSService: CloudflareDDNSServiceProtocol {
 
     func fetchPublicAddress(for family: DDNSAddressFamily, source: DDNSAddressSource) async throws -> String {
         guard let url = source.lookupURL(for: family) else { throw DDNSError.invalidResponse }
-        var request = URLRequest(url: url)
-        request.timeoutInterval = 10
-        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        let (data, response) = try await session.data(for: request)
-        guard let response = response as? HTTPURLResponse,
-              (200...299).contains(response.statusCode) else {
-            throw DDNSError.requestFailed("Could not fetch the current \(family.rawValue) address.")
+        let data: Data
+        if source == .czlPublicLookup {
+            data = try await Self.fetchIPv4OnlyResponse(from: url)
+        } else {
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 10
+            request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+            let (responseData, response) = try await session.data(for: request)
+            guard let response = response as? HTTPURLResponse,
+                  (200...299).contains(response.statusCode) else {
+                throw DDNSError.requestFailed("Could not fetch the current \(family.rawValue) address.")
+            }
+            data = responseData
         }
         let address: String
         switch source {
@@ -37,12 +43,20 @@ struct CloudflareDDNSService: CloudflareDDNSServiceProtocol {
             address = String(decoding: data, as: UTF8.self)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
         case .czlPublicLookup:
-            guard let result = try? JSONDecoder().decode(CZLAddressResponse.self, from: data),
-                  result.code == 200,
-                  result.data.ipVersion == "IPv4" else {
-                throw DDNSError.requestFailed("ip.czl.net did not return a valid IPv4 response.")
+            guard let result = try? JSONDecoder().decode(CZLAddressResponse.self, from: data) else {
+                throw DDNSError.requestFailed("ip.czl.net returned an unexpected response format.")
             }
-            address = result.data.ip.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard result.code == 200 else {
+                throw DDNSError.requestFailed("ip.czl.net reported an error (code \(result.code)).")
+            }
+            guard let responseAddress = result.data?.ip,
+                  let version = result.data?.ipVersion else {
+                throw DDNSError.requestFailed("ip.czl.net returned no IP address.")
+            }
+            guard version == "IPv4" else {
+                throw DDNSError.requestFailed("ip.czl.net returned \(version) instead of IPv4. Check your proxy or VPN route.")
+            }
+            address = responseAddress.trimmingCharacters(in: .whitespacesAndNewlines)
         case .networkInterface:
             throw DDNSError.invalidResponse
         }
@@ -50,6 +64,31 @@ struct CloudflareDDNSService: CloudflareDDNSServiceProtocol {
             throw DDNSError.invalidPublicAddress(family)
         }
         return address
+    }
+
+    private static func fetchIPv4OnlyResponse(from url: URL) async throws -> Data {
+        try await Task.detached(priority: .utility) {
+            let process = Process()
+            let output = Pipe()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
+            process.arguments = [
+                "--ipv4", "--fail", "--silent", "--show-error", "--max-time", "10",
+                "--proto", "=https", url.absoluteString
+            ]
+            process.standardOutput = output
+            process.standardError = FileHandle.nullDevice
+            do {
+                try process.run()
+            } catch {
+                throw DDNSError.requestFailed("Could not start the macOS IPv4 network request.")
+            }
+            let data = output.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
+            guard process.terminationStatus == 0 else {
+                throw DDNSError.requestFailed("Could not reach ip.czl.net over IPv4 (curl error \(process.terminationStatus)).")
+            }
+            return data
+        }.value
     }
 
     func updateRecord(
@@ -113,7 +152,7 @@ private struct CZLAddressResponse: Decodable {
     }
 
     let code: Int
-    let data: AddressData
+    let data: AddressData?
 }
 
 private struct UpdateRequest: Encodable {
