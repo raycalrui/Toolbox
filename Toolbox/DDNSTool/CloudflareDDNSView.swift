@@ -84,7 +84,7 @@ struct CloudflareDDNSView: View {
                 Toggle("Update this record", isOn: record.isEnabled)
                 LabeledContent("Address source") {
                     Picker("Address source", selection: record.addressSource) {
-                        ForEach(DDNSAddressSource.allCases) { source in
+                        ForEach(DDNSAddressSource.allCases.filter { $0.isAvailable(for: family) }) { source in
                             Text(source.label).tag(source)
                         }
                     }
@@ -111,28 +111,37 @@ struct CloudflareDDNSView: View {
             }
             .padding(6)
         }
+        .onChange(of: record.wrappedValue.addressSource) { _, _ in
+            model.clearPublicAddressPreview(for: family)
+        }
     }
 
     private func publicAddressSettings(for family: DDNSAddressFamily) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Button("Check IP", systemImage: "arrow.clockwise") {
-                model.checkPublicAddress(for: family)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Button("Check IP", systemImage: "arrow.clockwise") {
+                    model.checkPublicAddress(for: family)
+                }
+                .disabled(model.publicAddressPreviews[family] == .loading)
+                switch model.publicAddressPreviews[family] ?? .idle {
+                case .idle:
+                    Text("Check the public address before updating this record.")
+                        .foregroundStyle(.secondary)
+                case .loading:
+                    ProgressView().controlSize(.small)
+                    Text("Checking public \(family.rawValue)…")
+                        .foregroundStyle(.secondary)
+                case .loaded(let address):
+                    Text(address)
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                case .failed(let message):
+                    Text(message).foregroundStyle(.orange)
+                }
             }
-            .disabled(model.publicAddressPreviews[family] == .loading)
-            switch model.publicAddressPreviews[family] ?? .idle {
-            case .idle:
-                Text("Check the public address before updating this record.")
+            if family == .ipv4 && model.configuration.ipv4.addressSource == .czlPublicLookup {
+                Text("A system proxy or VPN may still affect the detected IP. Check the result before updating.")
                     .foregroundStyle(.secondary)
-            case .loading:
-                ProgressView().controlSize(.small)
-                Text("Checking public \(family.rawValue)…")
-                    .foregroundStyle(.secondary)
-            case .loaded(let address):
-                Text(address)
-                    .font(.system(.caption, design: .monospaced))
-                    .textSelection(.enabled)
-            case .failed(let message):
-                Text(message).foregroundStyle(.orange)
             }
         }
         .font(.caption)

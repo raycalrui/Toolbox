@@ -2,7 +2,7 @@ import Darwin
 import Foundation
 
 protocol CloudflareDDNSServiceProtocol: Sendable {
-    func fetchPublicAddress(for family: DDNSAddressFamily) async throws -> String
+    func fetchPublicAddress(for family: DDNSAddressFamily, source: DDNSAddressSource) async throws -> String
     func updateRecord(
         zoneID: String,
         recordID: String,
@@ -21,8 +21,9 @@ struct CloudflareDDNSService: CloudflareDDNSServiceProtocol {
         self.session = session
     }
 
-    func fetchPublicAddress(for family: DDNSAddressFamily) async throws -> String {
-        var request = URLRequest(url: family.ipifyURL)
+    func fetchPublicAddress(for family: DDNSAddressFamily, source: DDNSAddressSource) async throws -> String {
+        guard let url = source.lookupURL(for: family) else { throw DDNSError.invalidResponse }
+        var request = URLRequest(url: url)
         request.timeoutInterval = 10
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         let (data, response) = try await session.data(for: request)
@@ -30,8 +31,21 @@ struct CloudflareDDNSService: CloudflareDDNSServiceProtocol {
               (200...299).contains(response.statusCode) else {
             throw DDNSError.requestFailed("Could not fetch the current \(family.rawValue) address.")
         }
-        let address = String(decoding: data, as: UTF8.self)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let address: String
+        switch source {
+        case .publicLookup:
+            address = String(decoding: data, as: UTF8.self)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        case .czlPublicLookup:
+            guard let result = try? JSONDecoder().decode(CZLAddressResponse.self, from: data),
+                  result.code == 200,
+                  result.data.ipVersion == "IPv4" else {
+                throw DDNSError.requestFailed("ip.czl.net did not return a valid IPv4 response.")
+            }
+            address = result.data.ip.trimmingCharacters(in: .whitespacesAndNewlines)
+        case .networkInterface:
+            throw DDNSError.invalidResponse
+        }
         guard Self.isValid(address, family: family) else {
             throw DDNSError.invalidPublicAddress(family)
         }
@@ -90,6 +104,16 @@ struct CloudflareDDNSService: CloudflareDDNSServiceProtocol {
                 : inet_pton(AF_INET6, pointer, &ipv6) == 1
         }
     }
+}
+
+private struct CZLAddressResponse: Decodable {
+    struct AddressData: Decodable {
+        let ip: String
+        let ipVersion: String
+    }
+
+    let code: Int
+    let data: AddressData
 }
 
 private struct UpdateRequest: Encodable {

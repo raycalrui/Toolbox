@@ -62,12 +62,13 @@ App 当前寻找 `/opt/homebrew/bin/ffmpeg` 和 `/usr/local/bin/ffmpeg`。未检
 - **Sleep Prevention**：使用 macOS 电源管理 API 阻止系统或显示器睡眠，支持定时关闭和状态倒计时。
 - **Favorites**：为任意工具添加星标，并在侧边栏顶部快速访问；设置仅保存在本机。
 - **Finder Services**：从 Finder 右键 Services 将文本文件发送至 Text Diff，或将视频发送至 Video Converter。
-- **Cloudflare DDNS**：分别更新 A / AAAA 记录，各自选择 ipify 公网检测或指定本机接口作为 IP 来源；记录未启用时也能预先设置来源和接口，启用开关只控制是否更新 DNS。公网 IP 可先预览，IPv6 接口模式会排除临时及不可用于公网 DNS 的地址。支持 Keychain Token、手动或 App 运行期间定时更新，以及协议级状态与错误信息。
+- **Cloudflare DDNS**：分别更新 A / AAAA 记录。A 记录可选择 ipify、ip.czl.net 或指定本机接口；AAAA 记录可选择 ipify 或指定本机接口。记录未启用时也能预先设置来源和接口，启用开关只控制是否更新 DNS。公网 IP 可先预览，IPv6 接口模式会排除临时及不可用于公网 DNS 的地址。支持 Keychain Token、手动或 App 运行期间定时更新，以及协议级状态与错误信息。
 
 ## 当前边界
 
 - Clipboard History 无法可靠判断第三方 App 写入的无标记纯文本是否为密码；超过 20 MB 的图片不会被记录。
 - Cloudflare DDNS 的定时任务仅在 Toolbox 运行期间生效，尚未增加登录项辅助进程。
+- DDNS 的 ip.czl.net 来源已接入并通过本地构建，但尚未获准从这台 Mac 向该域名发送请求，因此实时可用性未验证。切换回显服务也不能保证绕过系统代理或 VPN；更新前应使用 Check IP 核对结果。
 - 若所选接口出现多个合格的公网地址，需要在 DDNS 页面指定其中一个；如果该地址后来消失且仍有多个候选，更新会暂停并提示重新选择。
 - Finder 入口当前采用 macOS Services；本地未签名构建可能需要刷新服务注册，尚未建立独立 Finder Sync Extension Target。
 - 尚未配置正式签名、App Sandbox、安装包或 GitHub 开源发布。

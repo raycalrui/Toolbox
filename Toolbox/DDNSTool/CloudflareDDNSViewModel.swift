@@ -157,10 +157,11 @@ final class CloudflareDDNSViewModel: ObservableObject {
         previewTasks[family]?.cancel()
         publicAddressPreviews[family] = .loading
         let service = service
+        let source = configuration.record(for: family).addressSource
         previewTasks[family] = Task { [weak self] in
             let result: RemoteValueState
             do {
-                result = .loaded(try await service.fetchPublicAddress(for: family))
+                result = .loaded(try await service.fetchPublicAddress(for: family, source: source))
             } catch is CancellationError {
                 return
             } catch {
@@ -169,6 +170,12 @@ final class CloudflareDDNSViewModel: ObservableObject {
             guard !Task.isCancelled, let self else { return }
             publicAddressPreviews[family] = result
         }
+    }
+
+    func clearPublicAddressPreview(for family: DDNSAddressFamily) {
+        previewTasks[family]?.cancel()
+        previewTasks[family] = nil
+        publicAddressPreviews[family] = .idle
     }
 
     private func restartSchedule() {

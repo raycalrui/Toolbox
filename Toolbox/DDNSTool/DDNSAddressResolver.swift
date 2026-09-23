@@ -13,8 +13,8 @@ struct DDNSAddressResolver: Sendable {
         record: DDNSRecordConfiguration
     ) async throws -> String {
         switch record.addressSource {
-        case .publicLookup:
-            return try await publicAddressService.fetchPublicAddress(for: family)
+        case .publicLookup, .czlPublicLookup:
+            return try await publicAddressService.fetchPublicAddress(for: family, source: record.addressSource)
         case .networkInterface:
             let interfaceName = record.interfaceName.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !interfaceName.isEmpty else { throw DDNSError.missingInterface(family) }

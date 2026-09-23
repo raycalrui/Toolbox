@@ -14,13 +14,27 @@ enum DDNSAddressFamily: String, Codable, CaseIterable, Identifiable, Sendable {
 
 enum DDNSAddressSource: String, Codable, CaseIterable, Identifiable, Sendable {
     case publicLookup
+    case czlPublicLookup
     case networkInterface
 
     var id: Self { self }
     var label: String {
         switch self {
         case .publicLookup: "Detect public IP (ipify.org)"
+        case .czlPublicLookup: "Detect public IP (ip.czl.net)"
         case .networkInterface: "Local network interface"
+        }
+    }
+
+    func isAvailable(for family: DDNSAddressFamily) -> Bool {
+        self != .czlPublicLookup || family == .ipv4
+    }
+
+    func lookupURL(for family: DDNSAddressFamily) -> URL? {
+        switch self {
+        case .publicLookup: family.ipifyURL
+        case .czlPublicLookup: family == .ipv4 ? URL(string: "https://ip.czl.net/api/query") : nil
+        case .networkInterface: nil
         }
     }
 }
@@ -99,7 +113,7 @@ enum DDNSError: LocalizedError, Sendable {
         case .missingZoneID: "Enter a Cloudflare Zone ID."
         case .noRecordsEnabled: "Enable at least one DNS record."
         case .incompleteRecord(let family): "Enter both the record name and Record ID for \(family.rawValue)."
-        case .invalidPublicAddress(let family): "ipify returned an invalid \(family.rawValue) address."
+        case .invalidPublicAddress(let family): "The address service returned an invalid \(family.rawValue) address."
         case .missingInterface(let family): "Select a network interface for \(family.rawValue)."
         case .noEligibleInterfaceAddress(let family, let name): "No usable public \(family.rawValue) address is available on \(name)."
         case .ambiguousInterfaceAddress(let family, let name): "Multiple public \(family.rawValue) addresses are available on \(name). Select one in the record settings."
