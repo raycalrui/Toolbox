@@ -30,7 +30,7 @@
   - Network Tools：本地 / 公网 IPv4 与 IPv6、Ping 和 IP/CIDR 解析。
 - 公网 IP 查询改为由用户主动刷新，并在界面标示 ipify.org 与不持久化策略。
 - 修复 Text Diff 编辑器与结果分割区未撑满窗口、Revised 面板被截断及工具栏标签换行的问题，并使上下区域的中央分隔线保持对齐。
-- 新增 Clipboard History：本地记录文本剪贴板、搜索、固定、复制、删除、暂停、保存期限、数量上限和清除操作，并忽略常见敏感剪贴板标记。
+- 新增 Clipboard History：本地记录文本与图片剪贴板，支持图片缩略图、尺寸与大小信息、再次复制，以及搜索、固定、删除、暂停、保存期限、数量上限和清除操作；图片以 PNG 保存于 App Support，单张限制为 20 MB，并忽略常见敏感剪贴板标记。
 - 新增 Sleep Prevention：可阻止系统或显示器睡眠，支持 30 分钟、1 小时、2 小时和持续开启，并显示状态与倒计时。
 - 新增 Favorites：侧边栏工具可星标收藏，并在顶部 Favorites 区域快速访问。
 - 新增 Finder Services：可从 Finder 右键菜单将文本文件发送至 Text Diff，或将视频发送至 Video Converter。

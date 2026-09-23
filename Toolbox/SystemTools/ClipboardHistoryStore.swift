@@ -1,5 +1,7 @@
 import AppKit
+import CryptoKit
 import Foundation
+import UniformTypeIdentifiers
 
 @MainActor
 final class ClipboardHistoryStore: ObservableObject {
@@ -31,19 +33,32 @@ final class ClipboardHistoryStore: ObservableObject {
         NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType"),
         NSPasteboard.PasteboardType("org.nspasteboard.TransientType")
     ]
+    static let maximumImageByteCount = 20_000_000
 
     private let pasteboard: NSPasteboard
     private let defaults: UserDefaults
+    private let imageDirectory: URL
     private var lastObservedChangeCount: Int
     private var monitoringTask: Task<Void, Never>?
+    private var imageCache: [String: NSImage] = [:]
 
     init(
         pasteboard: NSPasteboard = .general,
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults = .standard,
+        storageDirectory: URL? = nil
     ) {
         self.pasteboard = pasteboard
         self.defaults = defaults
+        let baseDirectory = storageDirectory ?? FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Toolbox/ClipboardHistory", isDirectory: true)
+        imageDirectory = baseDirectory.appendingPathComponent("Images", isDirectory: true)
         lastObservedChangeCount = pasteboard.changeCount
+
+        try? FileManager.default.createDirectory(
+            at: imageDirectory,
+            withIntermediateDirectories: true
+        )
 
         let savedMaximum = defaults.integer(forKey: Keys.maximumItemCount)
         maximumItemCount = savedMaximum > 0 ? savedMaximum : 100
@@ -56,6 +71,7 @@ final class ClipboardHistoryStore: ObservableObject {
            let decoded = try? JSONDecoder().decode([ClipboardHistoryItem].self, from: data) {
             items = decoded
         }
+        removeMissingImageItems()
         trimAndPersist()
     }
 
@@ -85,7 +101,12 @@ final class ClipboardHistoryStore: ObservableObject {
 
     func copy(_ item: ClipboardHistoryItem) {
         pasteboard.clearContents()
-        pasteboard.setString(item.text, forType: .string)
+        if let text = item.text {
+            pasteboard.setString(text, forType: .string)
+        } else if let data = imageData(for: item), let image = NSImage(data: data) {
+            pasteboard.writeObjects([image])
+            pasteboard.setData(data, forType: .png)
+        }
         lastObservedChangeCount = pasteboard.changeCount
     }
 
@@ -98,17 +119,33 @@ final class ClipboardHistoryStore: ObservableObject {
 
     func delete(_ item: ClipboardHistoryItem) {
         items.removeAll { $0.id == item.id }
+        removeImageFile(for: item)
         persist()
     }
 
     func clearUnpinned() {
+        let removedItems = items.filter { !$0.isPinned }
         items.removeAll { !$0.isPinned }
+        removeImageFiles(for: removedItems)
         persist()
     }
 
     func clearAll() {
+        removeImageFiles(for: items)
         items.removeAll()
         persist()
+    }
+
+    func image(for item: ClipboardHistoryItem) -> NSImage? {
+        guard let fileName = item.imageFileName else { return nil }
+        if let cached = imageCache[fileName] { return cached }
+        guard let image = NSImage(contentsOf: imageURL(fileName: fileName)) else { return nil }
+        imageCache[fileName] = image
+        return image
+    }
+
+    func captureCurrentClipboard() {
+        pollPasteboard()
     }
 
     private func pollPasteboard() {
@@ -116,6 +153,12 @@ final class ClipboardHistoryStore: ObservableObject {
         guard changeCount != lastObservedChangeCount else { return }
         lastObservedChangeCount = changeCount
         guard !isPaused, !containsSensitiveMarker else { return }
+
+        if let capturedImage = capturedImage() {
+            addImage(capturedImage)
+            return
+        }
+
         guard let rawText = pasteboard.string(forType: .string) else { return }
 
         let text = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -136,6 +179,7 @@ final class ClipboardHistoryStore: ObservableObject {
     }
 
     private func trimAndPersist() {
+        let previousItems = items
         if let cutoffDate = retention.cutoffDate {
             items.removeAll { !$0.isPinned && $0.createdAt < cutoffDate }
         }
@@ -145,6 +189,8 @@ final class ClipboardHistoryStore: ObservableObject {
         let availableRegularSlots = max(0, maximumItemCount - pinned.count)
         let regular = items.filter { !$0.isPinned }.prefix(availableRegularSlots)
         items = pinned + regular
+        let retainedIDs = Set(items.map(\.id))
+        removeImageFiles(for: previousItems.filter { !retainedIDs.contains($0.id) })
         persist()
     }
 
@@ -158,6 +204,115 @@ final class ClipboardHistoryStore: ObservableObject {
     private func persist() {
         if let data = try? JSONEncoder().encode(items) {
             defaults.set(data, forKey: Keys.items)
+        }
+    }
+
+    private struct CapturedImage {
+        let pngData: Data
+        let width: Int
+        let height: Int
+        let hash: String
+    }
+
+    private func capturedImage() -> CapturedImage? {
+        let imageData: Data?
+        if let pngData = pasteboard.data(forType: .png) {
+            imageData = pngData
+        } else if let tiffData = pasteboard.data(forType: .tiff) {
+            imageData = tiffData
+        } else if let jpegData = pasteboard.data(forType: NSPasteboard.PasteboardType(UTType.jpeg.identifier)) {
+            imageData = jpegData
+        } else {
+            imageData = imageFileDataFromPasteboard()
+        }
+
+        guard let imageData,
+              let bitmap = bitmapRepresentation(from: imageData),
+              let pngData = bitmap.representation(using: .png, properties: [:]),
+              pngData.count <= Self.maximumImageByteCount else { return nil }
+
+        let hash = SHA256.hash(data: pngData).map { String(format: "%02x", $0) }.joined()
+        return CapturedImage(
+            pngData: pngData,
+            width: bitmap.pixelsWide,
+            height: bitmap.pixelsHigh,
+            hash: hash
+        )
+    }
+
+    private func imageFileDataFromPasteboard() -> Data? {
+        let options: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
+        guard let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL],
+              let imageURL = urls.first(where: { url in
+                  (try? url.resourceValues(forKeys: [.contentTypeKey]).contentType)?.conforms(to: .image) == true
+              }),
+              let fileSize = try? imageURL.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+              fileSize <= Self.maximumImageByteCount * 5 else { return nil }
+        return try? Data(contentsOf: imageURL, options: .mappedIfSafe)
+    }
+
+    private func bitmapRepresentation(from data: Data) -> NSBitmapImageRep? {
+        if let bitmap = NSBitmapImageRep(data: data) {
+            return bitmap
+        }
+        guard let image = NSImage(data: data),
+              let tiffData = image.tiffRepresentation else { return nil }
+        return NSBitmapImageRep(data: tiffData)
+    }
+
+    private func addImage(_ capturedImage: CapturedImage) {
+        if let existingIndex = items.firstIndex(where: { $0.imageContentHash == capturedImage.hash }) {
+            let existing = items.remove(at: existingIndex)
+            removeImageFile(for: existing)
+            saveImage(capturedImage, isPinned: existing.isPinned)
+        } else {
+            saveImage(capturedImage, isPinned: false)
+        }
+        trimAndPersist()
+    }
+
+    private func saveImage(_ capturedImage: CapturedImage, isPinned: Bool) {
+        let id = UUID()
+        let fileName = "\(id.uuidString).png"
+        do {
+            try capturedImage.pngData.write(to: imageURL(fileName: fileName), options: .atomic)
+            items.append(ClipboardHistoryItem(
+                id: id,
+                imageFileName: fileName,
+                imageContentHash: capturedImage.hash,
+                imageByteCount: capturedImage.pngData.count,
+                imagePixelWidth: capturedImage.width,
+                imagePixelHeight: capturedImage.height,
+                isPinned: isPinned
+            ))
+        } catch {
+            return
+        }
+    }
+
+    private func imageData(for item: ClipboardHistoryItem) -> Data? {
+        guard let fileName = item.imageFileName else { return nil }
+        return try? Data(contentsOf: imageURL(fileName: fileName), options: .mappedIfSafe)
+    }
+
+    private func imageURL(fileName: String) -> URL {
+        imageDirectory.appendingPathComponent(fileName, isDirectory: false)
+    }
+
+    private func removeImageFile(for item: ClipboardHistoryItem) {
+        guard let fileName = item.imageFileName else { return }
+        imageCache[fileName] = nil
+        try? FileManager.default.removeItem(at: imageURL(fileName: fileName))
+    }
+
+    private func removeImageFiles(for items: [ClipboardHistoryItem]) {
+        items.forEach(removeImageFile(for:))
+    }
+
+    private func removeMissingImageItems() {
+        items.removeAll { item in
+            guard let fileName = item.imageFileName else { return false }
+            return !FileManager.default.fileExists(atPath: imageURL(fileName: fileName).path)
         }
     }
 }

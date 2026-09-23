@@ -58,7 +58,7 @@ App 当前寻找 `/opt/homebrew/bin/ffmpeg` 和 `/usr/local/bin/ffmpeg`。未检
 - **UUID & Random String**：UUID v4、自定义长度与字符组、批量生成、单项或全部复制，使用系统安全随机源。
 - **Password Tools**：强密码批量生成、排除易混淆字符、本地密码强度与改进建议；密码不保存、不上传。
 - **Network Tools**：本机接口与地址、公网 IPv4/IPv6、IPv4/IPv6 Ping、IP/CIDR 规范化及网段范围解析。公网地址仅在用户点击 Refresh 后向 `ipify.org` 查询，结果不持久化。
-- **Clipboard History**：本地文本剪贴板历史、搜索、固定、复制、删除、暂停、保存期限和数量上限；忽略 Concealed / Transient 类型。
+- **Clipboard History**：本地文本与图片剪贴板历史，图片可直接预览并再次复制；支持搜索、固定、删除、暂停、保存期限和数量上限，并忽略 Concealed / Transient 类型。图片统一以 PNG 保存在 App Support，单张上限为 20 MB。
 - **Sleep Prevention**：使用 macOS 电源管理 API 阻止系统或显示器睡眠，支持定时关闭和状态倒计时。
 - **Favorites**：为任意工具添加星标，并在侧边栏顶部快速访问；设置仅保存在本机。
 - **Finder Services**：从 Finder 右键 Services 将文本文件发送至 Text Diff，或将视频发送至 Video Converter。
@@ -66,7 +66,7 @@ App 当前寻找 `/opt/homebrew/bin/ffmpeg` 和 `/usr/local/bin/ffmpeg`。未检
 
 ## 当前边界
 
-- Clipboard History 无法可靠判断第三方 App 写入的无标记纯文本是否为密码。
+- Clipboard History 无法可靠判断第三方 App 写入的无标记纯文本是否为密码；超过 20 MB 的图片不会被记录。
 - Cloudflare DDNS 的定时任务仅在 Toolbox 运行期间生效，尚未增加登录项辅助进程。
 - Finder 入口当前采用 macOS Services；本地未签名构建可能需要刷新服务注册，尚未建立独立 Finder Sync Extension Target。
 - 尚未配置正式签名、App Sandbox、安装包或 GitHub 开源发布。

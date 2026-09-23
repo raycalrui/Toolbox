@@ -111,8 +111,8 @@
 - 日期：2026-09-22
 - 状态：已确认
 - 背景：Cloudflare API Token 属于敏感凭据，剪贴板历史和工具偏好也需要明确本地数据边界。
-- 结论：Cloudflare Token 只存入 macOS Keychain；非敏感 DDNS 配置、剪贴板历史及收藏偏好保存于本机 UserDefaults，不上传或同步。
-- 影响：删除 Token 不影响普通 DDNS 配置；剪贴板历史遵循本地保存期限和清除机制。
+- 结论：Cloudflare Token 只存入 macOS Keychain；非敏感 DDNS 配置、剪贴板文本及元数据、收藏偏好保存于本机 UserDefaults，剪贴板图片以 PNG 文件保存在 App Support；以上内容均不上传或同步。
+- 影响：删除 Token 不影响普通 DDNS 配置；剪贴板历史遵循本地保存期限和清除机制，图片删除、自动淘汰或清空历史时会同步删除对应文件，单张图片限制为 20 MB。
 
 ## DEC-015：Finder MVP 先采用 NSServices
 
