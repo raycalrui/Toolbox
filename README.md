@@ -4,7 +4,7 @@
 
 App 用户界面从英文版开始开发；项目协作文档继续使用中文。
 
-App 图标已有四款候选稿，保存在 `Design/IconCandidates/`；用户选定前不替换 Xcode 的 `AppIcon`。
+App 图标候选稿保存在 `Design/IconCandidates/`，其中新增四款以橙色工具箱为参考的同系列变体；用户选定前不替换 Xcode 的 `AppIcon`。
 
 ## 当前状态
 
