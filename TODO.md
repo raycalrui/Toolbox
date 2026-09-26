@@ -130,6 +130,10 @@
   - 每个侧边栏工具提供星标按钮与右键菜单，收藏项目显示在顶部 Favorites 区域。
   - 收藏列表保存到本机 UserDefaults，不进行云同步；独立首页和拖动排序不属于本轮 MVP。
 
+- **UX-002 `[进行中]` App 图标设计**
+  - 已生成四款独立候选：多功能模块、抽象工具匣、模块化 T、橙色工具箱，保存在 `Design/IconCandidates/`。
+  - 等待用户选择或提出修改意见；选定后再制作所需尺寸并接入 Xcode `AppIcon`，检查 Dock 小尺寸辨识度。
+
 - **SYS-003 `[已完成]` Finder 右键入口**
   - 从 Finder 对选中文件调用适用的工具。
   - 通过 macOS NSServices 提供 `Compare Text in Toolbox` 与 `Convert Video in Toolbox`。

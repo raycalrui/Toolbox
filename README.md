@@ -4,6 +4,8 @@
 
 App 用户界面从英文版开始开发；项目协作文档继续使用中文。
 
+App 图标已有四款候选稿，保存在 `Design/IconCandidates/`；用户选定前不替换 Xcode 的 `AppIcon`。
+
 ## 当前状态
 
 本地多工具 MVP 已完成：除视频转换外，现已提供 Text Diff、UUID / Random String、Password Tools、Network Tools、Clipboard History、Sleep Prevention 和 Cloudflare DDNS，并通过统一侧边栏及 Favorites 快速切换。
