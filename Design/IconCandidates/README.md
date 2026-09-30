@@ -15,4 +15,4 @@ The user selected the visual style of `D-orange-case.png` as a reference and req
 | `D3-two-windows.png` | Two windows | Same case with two larger front cutouts instead of three. |
 | `D4-wrench-cutout.png` | Wrench cutout | Same case with one large wrench silhouette cut through the front. |
 
-Shared constraints: centered single macOS app icon, rounded-square background, safe margins, legible at Dock size, no text, no Apple or third-party marks, and no watermark. User selection is pending; do not replace the project AppIcon yet.
+Shared constraints: centered single macOS app icon, rounded-square background, safe margins, legible at Dock size, no text, no Apple or third-party marks, and no watermark. These earlier candidates remain archived. On 2026-10-01 the user selected the origami utility container; see `../AppIcon/README.md` for the active artwork and export process.

@@ -4,6 +4,12 @@ import SwiftUI
 @MainActor
 private final class ToolboxAppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Development builds can retain a cached generic Dock icon across
+        // rebuilds. Load the bundled icon explicitly for the running app.
+        if let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+           let icon = NSImage(contentsOf: iconURL) {
+            NSApplication.shared.applicationIconImage = icon
+        }
         FinderServiceProvider.shared.register()
     }
 }
