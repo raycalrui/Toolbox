@@ -4,16 +4,17 @@ This is the source of truth for requirements and execution status. Unselected id
 
 ## Current milestone
 
-The multi-tool local MVP is implemented. The first public source repository and v0.1.0 preview DMG are being prepared.
+The multi-tool MVP and first public MIT source repository are published. The v0.1.0 preview DMG is available on GitHub Releases.
 
-### REL-001 — Public GitHub repository and DMG — In progress
+### REL-001 — Public GitHub repository and DMG — Completed
 
 - Authorized 2026-11-01: create a public open-source GitHub project and publish a DMG. Intended repository: raycalrui/Toolbox; release: v0.1.0 preview. User selected MIT; retain OpenCC attribution/license.
 - Public repository raycalrui/Toolbox created. Universal Release app and approximately 4 MB DMG built with scripts/build-dmg.sh. Outputs: dist/Toolbox-0.1.0.dmg and dist/SHA256SUMS.
-- Recorded verification: Developer ID signatures on app/DMG; mounted DMG contents; icon, OpenCC dictionaries, and license notices present; 24 subtitle checks and recording queue batch/naming/protection/skip/cancel/retry/cleanup/failure checks passed. Release upload/public download verification remain pending.
+- Recorded verification: Developer ID signatures on app/DMG; mounted DMG contents; icon, OpenCC dictionaries, and license notices present; 24 subtitle checks and recording queue batch/naming/protection/skip/cancel/retry/cleanup/failure checks passed. Recording engine conversion, immediate failures, output preservation and cancellation also passed.
+- Published https://github.com/raycalrui/Toolbox/releases/tag/v0.1.0 as a public preview with DMG and SHA256SUMS. Anonymous DMG download matched local SHA-256 f7c6999d0c67e45dc75c7ac2a94ae531ea61f6ca4987611649e1518cb8f2206d. Intel was compiled, not tested on physical Intel hardware.
 - Developer ID certificate available; no usable notarytool Keychain profile found. Notarization remains incomplete. Signing is not notarization.
 - Acceptance: source/history privacy review, third-party notices, relevant existing checks, architectures/signature/icon/dictionaries, DMG contents/checksum, reviewed-source push, and verified published assets.
-- The releasing agent must record actual final results and publication before marking complete.
+- Notarization follow-up: configure a local notarytool profile, rebuild/notarize/staple the app and final DMG, then publish a new verified release. Do not replace this preview's assets silently.
 
 ## Creative and video
 

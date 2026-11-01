@@ -2,9 +2,9 @@
 
 Implemented user-visible changes only. Plans and unfinished acceptance belong in TODO.md.
 
-## Unreleased
+## 0.1.0 — 2026-11-01 (Public Preview)
 
-The first v0.1.0 preview release is being prepared. Public repository creation is complete; release asset upload and final public download verification are pending.
+Published the MIT source and Universal Developer ID-signed app/DMG to GitHub. Anonymous DMG download and SHA-256 equality passed. This preview is not notarized; installation guidance states the resulting first-launch limitation.
 
 ### Added
 

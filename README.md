@@ -6,7 +6,7 @@ A native, local-first macOS toolbox for video, text, networking, privacy, and ev
 
 ## Release status
 
-The public repository is [raycalrui/Toolbox](https://github.com/raycalrui/Toolbox). Its first **v0.1.0 preview** release is being prepared; release asset upload and final verification are tracked in [TODO.md](TODO.md).
+The public repository is [raycalrui/Toolbox](https://github.com/raycalrui/Toolbox). Download the **[v0.1.0 preview DMG](https://github.com/raycalrui/Toolbox/releases/download/v0.1.0/Toolbox-0.1.0.dmg)** or read the [release notes and checksums](https://github.com/raycalrui/Toolbox/releases/tag/v0.1.0). Anonymous download and SHA-256 equality were verified on 2026-11-01.
 
 The DMG contains a Universal app for Apple Silicon and Intel Macs running **macOS 15 or later**. The app and DMG have verified Developer ID signatures, but **Apple notarization is not complete**. Signing does not imply notarization; macOS may block a downloaded preview. See [installation instructions](docs/INSTALL.md) and the actual release notes for final artifact status.
 

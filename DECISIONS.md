@@ -4,8 +4,8 @@ Long-lived product and technical decisions. Historical decisions retain their ID
 
 ## DEC-023 — First public source and DMG release
 
-- Date: 2026-11-01. Status: authorized and being prepared.
-- Publish raycalrui/Toolbox as a public MIT project and prepare v0.1.0 preview DMG. OpenCC remains Apache-2.0 with attribution. Repository creation is complete; release upload/verification is pending.
+- Date: 2026-11-01. Status: published.
+- Published raycalrui/Toolbox as a public MIT project with v0.1.0 preview DMG and SHA256SUMS. OpenCC remains Apache-2.0 with attribution. Anonymous asset download matched the local DMG checksum.
 - Universal Release build and Developer ID signatures for app and DMG have been verified. Notarization remains incomplete because no usable local notarytool profile is available. Never describe signing as notarization.
 - External FFmpeg remains separately installed; do not bundle the local Homebrew executable.
 
