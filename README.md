@@ -1,89 +1,85 @@
 # Toolbox
 
-一款面向 macOS 的原生工具箱 App，计划整合创作、文本、网络、隐私和系统辅助工具。
+<img src="Design/AppIcon/selected-origami.png" width="128" alt="Toolbox origami icon">
 
-App 用户界面从英文版开始开发；项目协作文档继续使用中文。
+A native, local-first macOS toolbox for video, text, networking, privacy, and everyday system tasks. Built with SwiftUI and AppKit, with an English interface.
 
-App 当前暂定图标为「米白背景＋橙色折纸工具匣」，已接入 Xcode `AppIcon`。原图与可复现导出脚本保存在 `Design/AppIcon/`；早期候选仍保留。正式发布前使用专门设计工具与 Icon Composer 制作分层图标并校准 Apple 模板，见 TODO 的 UX-003。
+## Release status
 
-启动时会显式加载随包图标，以刷新本地开发版本的运行中图标。
+The public repository is [raycalrui/Toolbox](https://github.com/raycalrui/Toolbox). Its first **v0.1.0 preview** release is being prepared; release asset upload and final verification are tracked in [TODO.md](TODO.md).
 
-## 当前状态
+The DMG contains a Universal app for Apple Silicon and Intel Macs running **macOS 15 or later**. The app and DMG have verified Developer ID signatures, but **Apple notarization is not complete**. Signing does not imply notarization; macOS may block a downloaded preview. See [installation instructions](docs/INSTALL.md) and the actual release notes for final artifact status.
 
-本地多工具 MVP 已完成：除视频转换外，现已提供 Text Diff、UUID / Random String、Password Tools、Network Tools、Clipboard History、Sleep Prevention 和 Cloudflare DDNS，并通过统一侧边栏及 Favorites 快速切换。
+## Tools
 
-当前版本仅用于本地开发验证，依赖本机安装的 FFmpeg；尚未配置正式签名、App Sandbox 或 GitHub 开源。产品方向确定为不内嵌 FFmpeg，缺少依赖时引导用户通过 Homebrew 安装。
+| Tool | Capabilities |
+| --- | --- |
+| Video Converter | Batch MP4/MOV exports, hardware H.264/HEVC/ProRes 422, per-file settings, presets, custom resolution/frame rate/bitrate, progress, elapsed time, FPS, and ETA. |
+| Recording Fix | Convert QuickTime MOV recordings to constant 60 fps HEVC/hvc1 MOV, retain resolution, and copy audio using the original FFmpeg command's defaults. |
+| SRT Converter | Offline Simplified Chinese to Taiwan Traditional Chinese, including regional terminology; preserves timing, numbering, markup, line endings, and supported encodings. |
+| Text Diff | Line/word comparison, side-by-side/unified views, change highlighting, text-file drops, and result copying. |
+| UUID & Random String | Secure UUID v4, configurable length and character sets, batch generation, and copying. |
+| Password Tools | Strong password generation, ambiguous-character exclusion, and offline strength checks. |
+| Network Tools | Local interfaces, on-demand public IPv4/IPv6, Ping, and IPv4/IPv6/CIDR information. |
+| Cloudflare DDNS | Independent A/AAAA updates, public-IP or local-interface sources, address preview, Keychain token storage, and schedules while the app runs. |
+| Clipboard History | Local text/image history, thumbnails, search, pinning, copying, deletion, pause, and retention controls. |
+| Sleep Prevention | Prevent system or display sleep, with timed expiry and countdown. |
+| Favorites & Finder Services | Star tools; send selected text files or videos from Finder Services. |
 
-## 本地开发
+Video exports preserve sources and avoid output-name collisions. Each item owns independent settings; completed items are skipped on subsequent starts. Video Converter and Recording Fix maintain separate queues across tool switches. Output names can include selected parameters, such as `name_4K60_H265_40M.mp4`.
 
-- Xcode 工程：`Toolbox.xcodeproj`
-- App Target：`Toolbox`
-- Bundle ID：`com.raycal.Toolbox`（暂定）
-- 最低系统版本：macOS 15.0
-- Swift：6.0
+## FFmpeg dependency
 
-用 Xcode 打开 `Toolbox.xcodeproj` 后即可构建运行，通过左侧分组侧边栏选择工具。
+FFmpeg is **not bundled** or automatically installed. The video tools require a local Homebrew installation:
 
-视频转换 MVP 需要本机安装 FFmpeg：
-
-```bash
+```sh
 brew install ffmpeg
 ```
 
-App 当前寻找 `/opt/homebrew/bin/ffmpeg` 和 `/usr/local/bin/ffmpeg`。未检测到依赖时会区分 Homebrew / FFmpeg 缺失状态，显示安装说明、可复制命令和重新检测入口。
+Toolbox checks `/opt/homebrew/bin/ffmpeg` and `/usr/local/bin/ffmpeg`. If Homebrew or FFmpeg is missing, it explains the dependency, provides a copyable command, and offers **Check Again**. Other tools do not need FFmpeg.
 
-## 产品方向
+Recording Fix uses this fixed media pipeline, without quality or bitrate overrides:
 
-- macOS 原生体验
-- 本地优先和隐私优先
-- 工具模块化，可收藏常用工具
-- 后续可逐步接入菜单栏、全局快捷方式、Finder 和系统服务
-- 联网功能明确标识，并安全保存凭据
+```sh
+ffmpeg -hwaccel videotoolbox -i INPUT.mov -vf fps=60 \
+  -c:v hevc_videotoolbox -tag:v hvc1 -c:a copy OUTPUT.mov
+```
 
-## 当前优先功能
+The app adds queue safety and progress arguments. It writes `_60fps_h265.mov` beside each input by default, with an optional shared output folder and collision numbering.
 
-- 批量添加、拖放和顺序转换视频
-- 每个队列项目独立保存导出参数，选择视频后只编辑该视频的设置
-- 读取分辨率、帧率、时长、编码和文件大小
-- 输出 MP4 / MOV
-- 使用 VideoToolbox 导出 H.264、HEVC 和 Apple ProRes 422
-- 通过常用预设或自定义数值设置分辨率、帧率、视频码率与音频参数
-- 保存、更新和删除自定义导出预设
-- 自定义输出基础名称，并自动追加分辨率、帧率、编码和码率后缀，例如 `name_4K60_H265_40M.mp4`
-- 预计输出大小、进度百分比、实际用时、预计剩余时间、实时转换帧率、取消任务及 Finder 定位
-- 再次开始时只处理就绪、失败或已取消的项目，已完成项目不会重复导出
-- 已完成、失败或取消的项目均可从队列移除
+## Privacy and networking
 
-以上能力已经完成本地 MVP 验证。转换在本机执行，不上传视频。
+- No telemetry or cloud account is implemented. Media, subtitles, text, password generation, and password checks run locally.
+- Password-tool input is not saved or uploaded. Cloudflare tokens are stored in macOS Keychain, separately from non-sensitive preferences.
+- Clipboard history intentionally persists local content: text/metadata in UserDefaults and PNGs in Application Support. Default retention is **100 items for one week**. Limits are 25/50/100/250 items and one day/week/month/forever. Removal or expiry removes stored images. Images larger than 20 MB are not recorded.
+- Concealed/transient clipboard types are ignored. Passwords copied as unmarked ordinary text by other apps cannot reliably be identified as sensitive.
+- Public-IP lookup uses an identified third-party service. Network Tools queries ipify only on **Refresh**, without persisting results. DDNS queries its selected source for previews/updates, including configured schedules.
+- DDNS supports ipify, ip.czl.net for IPv4, or local interfaces. Multiple eligible addresses require an explicit choice. IPv6 filtering excludes temporary and unsuitable addresses. Proxies/VPNs can affect detected public addresses: check the preview.
+- DDNS schedules work **only while Toolbox is running**. No login helper is installed.
 
-## 已实现工具
+## Build from source
 
-- **Text Diff**：左右文本编辑、逐行或逐词对比、并排或统一结果、新增/删除/修改高亮、UTF-8 文本文件拖入和结果复制。
-- **UUID & Random String**：UUID v4、自定义长度与字符组、批量生成、单项或全部复制，使用系统安全随机源。
-- **Password Tools**：强密码批量生成、排除易混淆字符、本地密码强度与改进建议；密码不保存、不上传。
-- **Network Tools**：本机接口与地址、公网 IPv4/IPv6、IPv4/IPv6 Ping、IP/CIDR 规范化及网段范围解析。公网地址仅在用户点击 Refresh 后向 `ipify.org` 查询，结果不持久化。
-- **Clipboard History**：本地文本与图片剪贴板历史，图片可直接预览并再次复制；支持搜索、固定、删除、暂停、保存期限和数量上限，并忽略 Concealed / Transient 类型。图片统一以 PNG 保存在 App Support，单张上限为 20 MB。
-- **Sleep Prevention**：使用 macOS 电源管理 API 阻止系统或显示器睡眠，支持定时关闭和状态倒计时。
-- **Favorites**：为任意工具添加星标，并在侧边栏顶部快速访问；设置仅保存在本机。
-- **Finder Services**：从 Finder 右键 Services 将文本文件发送至 Text Diff，或将视频发送至 Video Converter。
-- **Cloudflare DDNS**：分别更新 A / AAAA 记录。A 记录可选择 ipify、ip.czl.net 或指定本机接口；AAAA 记录可选择 ipify 或指定本机接口。记录未启用时也能预先设置来源和接口，启用开关只控制是否更新 DNS。公网 IP 可先预览，IPv6 接口模式会排除临时及不可用于公网 DNS 的地址。支持 Keychain Token、手动或 App 运行期间定时更新，以及协议级状态与错误信息。
+Open `Toolbox.xcodeproj` in a current Xcode and run the **Toolbox** scheme on your Mac. The project uses Swift 6, targets macOS 15+, and uses bundle identifier `com.raycal.Toolbox`. App Sandbox is not enabled because the app invokes locally installed command-line tools.
 
-## 当前边界
+For Release build and DMG packaging:
 
-- Clipboard History 无法可靠判断第三方 App 写入的无标记纯文本是否为密码；超过 20 MB 的图片不会被记录。
-- Cloudflare DDNS 的定时任务仅在 Toolbox 运行期间生效，尚未增加登录项辅助进程。
-- DDNS 的 ip.czl.net 来源在首次手动 Check IP 时显示笼统的无效 IPv4 错误；现已按官方建议强制 IPv4 连接并细分错误，修复后的版本通过本地构建，仍待用户在 App 内复测。切换回显服务也不能保证绕过系统代理或 VPN；更新前应使用 Check IP 核对结果。
-- 若所选接口出现多个合格的公网地址，需要在 DDNS 页面指定其中一个；如果该地址后来消失且仍有多个候选，更新会暂停并提示重新选择。
-- Finder 入口当前采用 macOS Services；本地未签名构建可能需要刷新服务注册，尚未建立独立 Finder Sync Extension Target。
-- 尚未配置正式签名、App Sandbox、安装包或 GitHub 开源发布。
+```sh
+bash scripts/build-dmg.sh
+```
 
-## 项目文档
+Outputs: `dist/Toolbox-0.1.0.dmg` and `dist/SHA256SUMS`. Set `SIGN_IDENTITY` locally for Developer ID signing; otherwise the script uses ad-hoc signing. Optional `NOTARY_PROFILE` enables app and DMG notarization/stapling. Credentials belong in the local Keychain, never Git.
 
-- [`AGENTS.md`](AGENTS.md)：协作、开发和文档维护规则
-- [`TODO.md`](TODO.md)：需求池、优先级和实施状态
-- [`DECISIONS.md`](DECISIONS.md)：长期产品与技术决策
-- [`CHANGELOG.md`](CHANGELOG.md)：已交付功能和版本变化
+## Known limitations
 
-## 文档维护
+- Recording Fix converts every imported MOV without VFR detection. FFmpeg's default track selection applies; not every audio/data track is guaranteed. Synthetic VFR-to-CFR checks passed; real QuickTime-to-DaVinci Resolve acceptance remains outstanding.
+- SRT conversion uses OpenCC 1.1.9 dictionaries with an independent Swift longest-match engine, not the C++ segmentation runtime. Phrases do not span lines or tags; names and ambiguous terms need review. One file up to 5 MB, with UTF-8, UTF-8 BOM, or BOM-marked UTF-16 LE/BE.
+- The revised ip.czl.net lookup forces IPv4 and distinguishes service/format/address errors; app-side retesting is pending. Failures do not silently switch sources or update DNS.
+- Real Cloudflare DNS writes with user credentials were not part of recorded validation.
+- Finder uses macOS **Services**, not Finder Sync. Registration depends on local installation/session state.
+- The origami icon is provisional. Editable layers and Apple Icon Composer production are tracked as **UX-003**.
 
-项目文档由后续执行任务的 Agent 随项目同步维护：需求变化更新 `TODO.md`，长期决策更新 `DECISIONS.md`，完成的用户可感知变化更新 `README.md` 和 `CHANGELOG.md`。任何规划中的能力都不得写成已完成功能。
+## License and project notes
+
+Toolbox uses the [MIT License](LICENSE). Bundled OpenCC dictionaries retain Apache-2.0 licensing and attribution; see [third-party notices](THIRD_PARTY_NOTICES.md). External FFmpeg is installed and licensed separately.
+
+[TODO.md](TODO.md) tracks work and evidence, [DECISIONS.md](DECISIONS.md) records product decisions, and [CHANGELOG.md](CHANGELOG.md) records implemented changes. Project documentation and user-visible text use English.

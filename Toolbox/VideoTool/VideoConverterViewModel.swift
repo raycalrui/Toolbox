@@ -2,23 +2,37 @@ import AppKit
 import Foundation
 import UniformTypeIdentifiers
 
+enum VideoConversionMode {
+    case standard
+    case recordingFix
+}
+
 @MainActor
 final class VideoConverterViewModel: ObservableObject {
+    let mode: VideoConversionMode
     @Published var items: [VideoItem] = []
     @Published var defaultPreset: ConversionPreset
     @Published var selectedItemID: UUID?
     @Published var outputDirectory: URL?
     @Published var isConverting = false
+    @Published private(set) var importingCount = 0
     @Published var presentedError: String?
     @Published private(set) var ffmpegDependencyStatus: FFmpegDependencyStatus
 
     let presetStore = PresetStore()
     private let engine = FFmpegEngine()
     private var conversionTask: Task<Void, Never>?
+    private var importingURLs: Set<URL> = []
 
-    init() {
+    init(mode: VideoConversionMode = .standard) {
+        self.mode = mode
         defaultPreset = ConversionPreset.builtIns[0]
         ffmpegDependencyStatus = FFmpegLocator.dependencyStatus()
+    }
+
+    var isRecordingFix: Bool { mode == .recordingFix }
+    var canStartConversion: Bool {
+        hasRunnableItems && importingCount == 0 && isFFmpegAvailable && (isRecordingFix || outputDirectory != nil)
     }
 
     var selectedItem: VideoItem? {
@@ -50,6 +64,7 @@ final class VideoConverterViewModel: ObservableObject {
     }
 
     var estimatedOutputSize: String? {
+        guard !isRecordingFix else { return nil }
         let bytes = items
             .filter { $0.status.canStart }
             .reduce(Int64(0)) { total, item in
@@ -65,8 +80,8 @@ final class VideoConverterViewModel: ObservableObject {
 
     func chooseVideos() {
         let panel = NSOpenPanel()
-        panel.title = "Choose Videos to Convert"
-        panel.allowedContentTypes = [.movie, .video]
+        panel.title = isRecordingFix ? "Choose QuickTime Recordings" : "Choose Videos to Convert"
+        panel.allowedContentTypes = isRecordingFix ? [.quickTimeMovie] : [.movie, .video]
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
 
@@ -108,17 +123,32 @@ final class VideoConverterViewModel: ObservableObject {
     }
 
     func add(urls: [URL]) {
-        let existing = Set(items.map(\.url))
-        let newURLs = urls.filter { !existing.contains($0) }
-
-        for url in newURLs {
+        for originalURL in urls {
+            let url = originalURL.standardizedFileURL
+            guard url.isFileURL else { continue }
+            if isRecordingFix, url.pathExtension.lowercased() != "mov" {
+                presentedError = "Recording Fix accepts MOV files only."
+                continue
+            }
+            guard !items.contains(where: { $0.url == url }), !importingURLs.contains(url) else { continue }
+            importingURLs.insert(url)
+            importingCount += 1
             Task {
+                defer {
+                    importingURLs.remove(url)
+                    importingCount -= 1
+                }
                 do {
+                    guard try url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true else {
+                        throw VideoToolError.noVideoTrack
+                    }
                     let metadata = try await VideoMetadataLoader.load(from: url)
                     let item = VideoItem(url: url, metadata: metadata, preset: defaultPreset)
                     items.append(item)
                     selectedItemID = selectedItemID ?? item.id
-                    outputDirectory = outputDirectory ?? url.deletingLastPathComponent()
+                    if !isRecordingFix {
+                        outputDirectory = outputDirectory ?? url.deletingLastPathComponent()
+                    }
                 } catch {
                     presentedError = "Could not read \(url.lastPathComponent): \(error.localizedDescription)"
                 }
@@ -147,13 +177,19 @@ final class VideoConverterViewModel: ObservableObject {
     }
 
     func startConversion() {
-        guard !isConverting, hasRunnableItems else { return }
-        guard let outputDirectory else {
+        guard !isConverting, hasRunnableItems, importingCount == 0 else { return }
+        refreshFFmpegAvailability()
+        guard isFFmpegAvailable else {
+            presentedError = VideoToolError.ffmpegNotFound.localizedDescription
+            return
+        }
+        guard isRecordingFix || outputDirectory != nil else {
             presentedError = VideoToolError.invalidOutputDirectory.localizedDescription
             return
         }
 
         isConverting = true
+        let selectedOutputDirectory = outputDirectory
         let runnableIDs = items.filter { $0.status.canStart }.map(\.id)
         for index in items.indices where items[index].status.canStart {
             items[index].status = .ready
@@ -169,20 +205,34 @@ final class VideoConverterViewModel: ObservableObject {
                 guard let itemIndex = index(for: itemID) else { continue }
                 let item = items[itemIndex]
                 let preset = normalizedPreset(item.preset)
-                let outputURL = uniqueOutputURL(for: item, in: outputDirectory, preset: preset)
+                let directory = selectedOutputDirectory ?? item.url.deletingLastPathComponent()
+                let outputURL = uniqueOutputURL(for: item, in: directory, preset: preset)
+                // Only publish a finished Recording Fix file, never a cancelled partial MOV.
+                let workURL = isRecordingFix
+                    ? directory.appendingPathComponent(".toolbox-recording-\(UUID().uuidString).mov")
+                    : outputURL
+                defer {
+                    if isRecordingFix { try? FileManager.default.removeItem(at: workURL) }
+                }
                 items[itemIndex].status = .converting
 
                 do {
-                    try await engine.convert(
-                        input: item.url,
-                        output: outputURL,
-                        preset: preset,
-                        duration: item.metadata.duration
-                    ) { update in
-                        guard let currentIndex = self.index(for: itemID) else { return }
+                    let progress: @MainActor (ConversionProgress) -> Void = { update in
+                        guard let currentIndex = self.index(for: itemID),
+                              self.items[currentIndex].status == .converting else { return }
                         self.items[currentIndex].progress = update.fraction
                         self.items[currentIndex].elapsedTime = update.elapsedTime
                         self.items[currentIndex].processingFPS = update.framesPerSecond
+                    }
+                    if isRecordingFix {
+                        try await engine.convertRecording(input: item.url, output: workURL,
+                                                          duration: item.metadata.duration, progress: progress)
+                        try Task.checkCancellation()
+                        // moveItem refuses to overwrite if another process created this name meanwhile.
+                        try FileManager.default.moveItem(at: workURL, to: outputURL)
+                    } else {
+                        try await engine.convert(input: item.url, output: workURL, preset: preset,
+                                                 duration: item.metadata.duration, progress: progress)
                     }
 
                     if let completedIndex = index(for: itemID) {
@@ -218,6 +268,8 @@ final class VideoConverterViewModel: ObservableObject {
     }
 
     func outputFileName(for item: VideoItem) -> String {
+        if let outputURL = item.outputURL { return outputURL.lastPathComponent }
+        if isRecordingFix { return item.url.deletingPathExtension().lastPathComponent + "_60fps_h265.mov" }
         let preset = normalizedPreset(item.preset)
         return generatedFileName(for: item, preset: preset)
             .appending(".\(preset.container.fileExtension)")
@@ -263,16 +315,19 @@ final class VideoConverterViewModel: ObservableObject {
     }
 
     private func uniqueOutputURL(for item: VideoItem, in directory: URL, preset: ConversionPreset) -> URL {
-        let fileName = generatedFileName(for: item, preset: preset)
+        let fileName = isRecordingFix
+            ? item.url.deletingPathExtension().lastPathComponent + "_60fps_h265"
+            : generatedFileName(for: item, preset: preset)
+        let fileExtension = isRecordingFix ? "mov" : preset.container.fileExtension
         var candidate = directory
             .appendingPathComponent(fileName)
-            .appendingPathExtension(preset.container.fileExtension)
+            .appendingPathExtension(fileExtension)
         var counter = 2
 
         while FileManager.default.fileExists(atPath: candidate.path) {
             candidate = directory
                 .appendingPathComponent("\(fileName)_\(counter)")
-                .appendingPathExtension(preset.container.fileExtension)
+                .appendingPathExtension(fileExtension)
             counter += 1
         }
         return candidate

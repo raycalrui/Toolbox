@@ -1,161 +1,132 @@
 # Decisions
 
-用于记录已经确认、会长期影响产品或技术实现的决策。每条决策应包含日期、状态、背景、结论和影响。
+Long-lived product and technical decisions. Historical decisions retain their IDs; later entries supersede earlier ones where stated.
 
-## DEC-022：暂用折纸工具匣，正式规范制作留待后续
+## DEC-023 — First public source and DMG release
 
-- 日期：2026-10-01
-- 状态：用户已确认
-- 结论：采用创意重做一轮中显示的第二张「橙色折纸工具匣」（A），保留旧扳手原图。当前接入 PNG AppIcon；后续另行用专门设计 App 与 Icon Composer 重建正式分层资源并验证 Apple 模板。
-- 影响：本轮更新当前图标并记录 UX-003，不声称暂定栅格图已完成正式规范验收。用户已授权本次提交和 push；当前仓库无 remote，推送目标待用户提供。
+- Date: 2026-11-01. Status: authorized and being prepared.
+- Publish raycalrui/Toolbox as a public MIT project and prepare v0.1.0 preview DMG. OpenCC remains Apache-2.0 with attribution. Repository creation is complete; release upload/verification is pending.
+- Universal Release build and Developer ID signatures for app and DMG have been verified. Notarization remains incomplete because no usable local notarytool profile is available. Never describe signing as notarization.
+- External FFmpeg remains separately installed; do not bundle the local Homebrew executable.
 
-## DEC-021：暂用米白底橙色镂空扳手图标
+## DEC-022 — Provisional origami icon
 
-- 日期：2026-09-30
-- 状态：已被 DEC-022 替代，历史稿保留
-- 结论：使用最新一轮第一张（B，镂空手柄），不是轮廓款或双色款。保留原始图片及既有候选，仅做 macOS 圆角、留白及尺寸导出。
-- 影响：以传统 AppIcon asset catalog 支持当前 macOS 15+ Target；暂不引入 Icon Composer 分层资源，不改动业务功能或发布配置。
+- Date: 2026-10-01. Status: selected.
+- Use the second displayed image from the creative-reset round: orange origami utility container on ivory. Preserve earlier wrench artwork.
+- Current PNG AppIcon is provisional. Dedicated editable design and Icon Composer layering/template/appearance checks are deferred to UX-003.
 
-## DEC-001：首先开发 macOS 原生 App
+## DEC-021 — Provisional slotted wrench
 
-- 日期：2026-09-21
-- 状态：已确认
-- 背景：候选功能包含文件处理、剪贴板历史、睡眠控制、Finder 扩展和后台 DDNS，需要较深的 macOS 系统集成。
-- 结论：首先开发 macOS 原生 App，当前暂定使用 SwiftUI，必要时结合 AppKit 和系统扩展。
-- 影响：第一阶段不开发 Web App；未来可以把适合浏览器的轻量工具另行提供为网页版，但需要单独确认。
+- Date: 2026-09-30. Status: superseded by DEC-022.
+- Selected the first displayed slotted-handle orange wrench, with 16–1024 px exports. Retain historical artwork and export script.
 
-## DEC-002：用户决定功能实施顺序
+## DEC-020 — Fixed Recording Fix command
 
-- 日期：2026-09-21
-- 状态：已确认
-- 背景：当前功能池跨度较大，不适合一次性全部实现。
-- 结论：所有想法先进入 `TODO.md` 候选区，只有用户明确指定后才进入范围设计和开发。
-- 影响：可以维护基础工程，但不实现任何候选功能，直到用户明确指定顺序。
+- Date: 2026-09-28. Status: implemented.
+- Separate queue/entry using the shared engine with -hwaccel videotoolbox -i INPUT -vf fps=60 -c:v hevc_videotoolbox -tag:v hvc1 -c:a copy OUTPUT.
+- Add safety/progress arguments only; do not inject ordinary presets, scaling, pixel format, track overrides, quality, or bitrate. Preserve FFmpeg defaults.
+- Hidden temporary MOV becomes final only after success. Root-owned independent models survive tool switching. No persisted queues/login helper added. Re-encoding is not lossless.
 
-## DEC-003：MVP 前仅进行本地版本管理
+## DEC-019 — Offline Taiwan subtitle dictionaries
 
-- 日期：2026-09-21
-- 状态：已确认
-- 背景：项目需要在本地迭代和保留版本历史，但用户计划在 MVP 完成后再开源。
-- 结论：现在只使用本地 Git 仓库，不创建或连接 GitHub 远程仓库。
-- 影响：MVP 完成并获得用户明确授权前，不推送、发布或公开代码。
+- Date: 2026-09-28. Status: implemented.
+- Bundle OpenCC 1.1.9 s2twp dictionary stages with Apache-2.0 attribution. Independent Swift forward longest matching, not the C++ segmentation runtime.
+- Convert subtitle text while preserving structure/tags; phrases do not cross lines/tags. Human review for names/ambiguity. Default _zh-TW.srt, source protection, original supported encoding, no automatic persistence/network dependency.
 
-## DEC-004：初始工程配置
+## DEC-001 — Native macOS first
 
-- 日期：2026-09-21
-- 状态：暂定
-- 背景：需要一个可运行的工程骨架，等待首个 MVP 功能。
-- 结论：建立名为 `Toolbox` 的 macOS SwiftUI App，暂用 Bundle ID `com.raycal.Toolbox`、Swift 6.0 和 macOS 15.0 最低部署版本。
-- 影响：产品正式命名、Bundle ID 和最低系统版本仍可在发布前调整。
+- Date: 2026-09-21. Status: confirmed.
+- SwiftUI with AppKit/public APIs where needed for clipboard, files, power, networking, and Finder. Web version requires a separate selection.
 
-## DEC-005：首个 MVP 从视频工具开始
+## DEC-002 — User chooses implementation order
 
-- 日期：2026-09-21
-- 状态：已确认
-- 背景：用户选择视频工具作为第一个开发方向。
-- 结论：优先规划 `VID-001 视频格式转换`，其他候选工具继续保留在需求池。
-- 影响：视频工具范围确认后开始实现，其他候选工具暂不开发。
+- Date: 2026-09-21. Status: confirmed.
+- Record ideas as candidates until selected; do not implement easy features ahead of the user's priorities.
 
-## DEC-006：视频工具采用混合媒体架构
+## DEC-003 — Local Git before public authorization
 
-- 日期：2026-09-21
-- 状态：已确认
-- 背景：视频工具既需要广泛格式和参数控制，也需要原生 macOS 体验及 Apple Silicon 硬件编码。
-- 结论：SwiftUI / AVFoundation 负责文件交互、媒体信息和界面；FFmpeg 负责媒体转换，并优先使用 VideoToolbox 的 H.264、HEVC 和 ProRes 硬件编码器。
-- 影响：本地 MVP 使用已安装的 Homebrew FFmpeg。开源或正式分发前，必须替换为可复现、签名完整且许可证合规的 FFmpeg 构建；当前为允许执行外部开发依赖暂不启用 App Sandbox。
+- Date: 2026-09-21. Status: historical phase completed.
+- Initially no GitHub remote/publication. Explicit first-public-release authority was granted 2026-11-01 under DEC-023.
 
-## DEC-007：App 从英文界面开始开发
+## DEC-004 — Initial project configuration
 
-- 日期：2026-09-21
-- 状态：已确认
-- 背景：用户希望产品首先面向英文界面进行设计和开发。
-- 结论：App 内所有用户可见文案、状态、错误信息和系统文件选择窗口标题默认使用英文；项目协作文档继续使用中文。
-- 影响：新增功能必须先提供完整英文文案。后续是否增加本地化和中文界面，需要另行确认。
+- Date: 2026-09-21. Status: current starting configuration.
+- Toolbox, com.raycal.Toolbox, Swift 6, macOS 15 minimum. Final product name/identifier/compatibility can be reconsidered with explicit scope.
 
-## DEC-008：视频输出名称包含关键导出参数
+## DEC-005 — Video first
 
-- 日期：2026-09-21
-- 状态：已确认
-- 背景：`-converted` 无法帮助用户从文件名判断导出规格。
-- 结论：每个队列项目允许编辑输出基础名称，并自动追加分辨率、帧率、视频编码和可用的视频码率，例如 `name_4K60_H265_40M.mp4`；重名时再追加递增序号。
-- 影响：参数变化会实时更新文件名预览；ProRes 不使用用户码率，因此文件名不追加码率标签。
+- Date: 2026-09-21. Status: implemented.
+- User selected VID-001 as the first feature; other tools followed only after selection.
 
-## DEC-009：视频队列以项目为导出设置和运行状态边界
+## DEC-006 — Hybrid media architecture
 
-- 日期：2026-09-21
-- 状态：已确认
-- 背景：批量导入的视频可能需要不同的编码、分辨率、帧率和码率；队列重复启动也不应覆盖设置或重新处理已完成结果。
-- 结论：每个视频项目独立持有导出预设，右侧面板只绑定当前选中项目；开始转换只处理就绪、失败和已取消项目，已完成项目保持完成状态并跳过。
-- 影响：新增视频使用默认预设的独立副本；转换中项目不可删除或编辑，完成、失败和取消项目可以移除，取消项目可再次启动。
+- Date: 2026-09-21. Status: implemented; packaging superseded by DEC-010.
+- SwiftUI/AVFoundation handles UI and metadata; FFmpeg handles conversion with VideoToolbox hardware encoders.
+- App Sandbox currently disabled for invoking external development tools. The initial distribution-bundling proposal was superseded by DEC-010.
 
-## DEC-010：FFmpeg 作为外部 Homebrew 依赖
+## DEC-007 — English product and documentation
 
-- 日期：2026-09-21
-- 状态：已确认
-- 背景：内嵌 FFmpeg 会增加 App 体积、签名、公证、通用架构构建和许可证维护成本；目标用户可以自行安装 Homebrew 依赖。
-- 结论：App 不内嵌或自动安装 FFmpeg，优先检测 Apple Silicon 与 Intel Homebrew 路径；未找到时显示安装说明、可复制命令和重新检测入口。
-- 影响：视频工具不是完全零依赖分发，用户首次使用可能需要安装 Homebrew 和 FFmpeg；DEC-006 中“正式分发前必须内嵌 FFmpeg”的影响说明由本决策替代。
+- Date: 2026-09-21; updated 2026-11-01 to follow the user's latest repository instructions. Status: confirmed.
+- UI, user-visible states/errors/dialogs, filenames, README, and project documentation use English. Communicate with the user in Simplified Chinese by default.
+- Earlier Chinese collaboration documents are being translated for the public release.
 
-## DEC-011：工具模块保持独立状态并由统一侧边栏导航
+## DEC-008 — Parameterized export filenames
 
-- 日期：2026-09-21
-- 状态：已确认
-- 背景：App 已从单一视频工具扩展到文本、开发、安全和网络工具，需要避免状态和依赖互相影响。
-- 结论：每个工具使用独立目录、根视图和局部状态，通过分组侧边栏选择；共享壳层只负责工具选择和内容切换。
-- 影响：新增工具应保持模块边界，不把业务状态放入全局导航；密码等敏感输入在切换工具后销毁且不持久化。
+- Date: 2026-09-21. Status: implemented.
+- Editable base name plus resolution/FPS/codec/bitrate suffix, e.g. name_4K60_H265_40M.mp4; append collision numbering.
+- ProRes does not append a user bitrate label.
 
-## DEC-012：公网 IP 查询由用户主动触发
+## DEC-009 — Per-item settings and state
 
-- 日期：2026-09-21
-- 状态：已确认
-- 背景：显示公网 IPv4 / IPv6 需要访问外部回显服务，打开工具时自动查询会产生不必要的网络请求。
-- 结论：使用 ipify 官方 IPv4 与 IPv6 HTTPS 端点，但只在用户点击 Refresh 后查询；界面明确服务方，结果不写入磁盘。
-- 影响：Network Tools 初次打开仅读取本地接口；外部查询具有显式用户动作和独立错误状态。
+- Date: 2026-09-21. Status: implemented.
+- Each video owns an independent preset. Start handles ready/failed/cancelled items, skipping completed output. Active items are not editable/removable; finished items remain removable.
 
-## DEC-013：系统工具状态由 App 根层持有
+## DEC-010 — External Homebrew FFmpeg
 
-- 日期：2026-09-22
-- 状态：已确认
-- 背景：剪贴板监听、睡眠 assertion 和 DDNS 定时器不应因用户切换侧边栏工具而停止。
-- 结论：由 App 根视图持有 Clipboard、Sleep 和 DDNS controller，功能页面仅观察和编辑对应状态。
-- 影响：侧边栏切换不会中断任务；关闭 App 后释放睡眠 assertion，并停止剪贴板监听和 DDNS 定时器。
+- Date: 2026-09-21. Status: confirmed.
+- Do not bundle/auto-install FFmpeg. Detect Apple Silicon/Intel Homebrew paths and provide commands/recheck.
+- Avoid bundled binary maintenance, signing, size, and licensing overhead. First video use can require Homebrew/FFmpeg.
 
-## DEC-014：敏感凭据与普通设置分离保存
+## DEC-011 — Independent tools and shared sidebar
 
-- 日期：2026-09-22
-- 状态：已确认
-- 背景：Cloudflare API Token 属于敏感凭据，剪贴板历史和工具偏好也需要明确本地数据边界。
-- 结论：Cloudflare Token 只存入 macOS Keychain；非敏感 DDNS 配置、剪贴板文本及元数据、收藏偏好保存于本机 UserDefaults，剪贴板图片以 PNG 文件保存在 App Support；以上内容均不上传或同步。
-- 影响：删除 Token 不影响普通 DDNS 配置；剪贴板历史遵循本地保存期限和清除机制，图片删除、自动淘汰或清空历史时会同步删除对应文件，单张图片限制为 20 MB。
+- Date: 2026-09-21. Status: implemented.
+- Module folders, root views, local tool state, grouped navigation. Shared shell selects content rather than owning unrelated business logic.
+- Password-tool input is view-local and not persisted.
 
-## DEC-015：Finder MVP 先采用 NSServices
+## DEC-012 — Explicit public-IP queries
 
-- 日期：2026-09-22
-- 状态：已确认
-- 背景：本地 MVP 尚未配置正式签名和 App Sandbox，但需要尽快提供 Finder 右键入口。
-- 结论：先通过主 App 的 NSServices 提供文本对比和视频转换动作，并由持久化 inbox 路由到对应工具。
-- 影响：入口通常位于 Finder 的 Services 或 Quick Actions；正式分发前再评估独立 Finder Sync Extension Target。
+- Date: 2026-09-21. Status: implemented.
+- Network Tools queries ipify HTTPS endpoints only on Refresh, identifies the provider, and does not persist results. DDNS has separate explicit update schedules.
 
-## DEC-016：Favorites 仅使用本机偏好
+## DEC-013 — Long-running controller ownership
 
-- 日期：2026-09-22
-- 状态：已确认
-- 背景：当前需要快速访问常用工具，但尚未建立账号或同步系统。
-- 结论：侧边栏星标和 Favorites 区域使用本机 UserDefaults 保存，不提供云同步或独立首页。
-- 影响：实现简单且离线；不同 Mac 之间不会同步收藏顺序和状态。
+- Date: 2026-09-22. Status: implemented.
+- Root owns Clipboard/Sleep/DDNS controllers so navigation does not interrupt them. App exit stops monitoring/schedules and releases power assertions.
 
-## DEC-017：DDNS 为每条记录选择地址来源
+## DEC-014 — Separate credentials from settings
 
-- 日期：2026-09-23
-- 状态：已确认
-- 背景：AAAA 记录可能需要指向 Mac 在 `en0` 等接口上的稳定公网 IPv6，而公共回显服务检测到的 IPv6 不一定是目标地址。
-- 结论：A / AAAA 记录独立保存公网检测或本机接口来源；接口模式在每次更新时重新读取地址，并通过 macOS 逐地址 IPv6 标记排除临时、弃用及未就绪地址。多个合格地址时要求用户明确选择，不静默切换来源。
-- 影响：旧 DDNS 配置继续默认使用 ipify，保持原有行为；记录未启用时仍可预先编辑来源与接口，启用开关只控制是否参与更新。接口消失、无合格地址或先前选择失效时该记录更新失败并显示原因。Network Tools 的公网地址查询仍只在用户主动刷新时进行，DDNS 按其独立更新计划查询。
+- Date: 2026-09-22. Status: implemented.
+- Tokens in Keychain; ordinary settings, clipboard text/metadata, and favorites in UserDefaults; clipboard PNGs in Application Support.
+- All local, no synchronization. Retention/deletion cleans image files; maximum 20 MB per image.
 
-## DEC-018：DDNS IPv4 回显服务由用户选择
+## DEC-015 — Finder MVP uses NSServices
 
-- 日期：2026-09-23
-- 状态：已确认
-- 背景：ipify 查询可能被用户的代理规则送往代理出口，用户希望在现有来源选单中选择不同的回显服务。
-- 结论：A 记录增加文档化的 `ip.czl.net` HTTPS API 来源，保留 ipify 和本机接口；AAAA 记录不显示仅支持 IPv4 的该选项。每次预览或更新均使用当前记录选定的来源，不在失败时静默切换服务。
-- 影响：旧配置仍使用 ipify；新服务返回格式按官方文档校验，异常结果不会写入 Cloudflare。官方接口返回请求实际使用的地址族，因此 A 记录的 ip.czl.net 查询使用 macOS 自带 `curl --ipv4` 强制 IPv4 连接；这仍不能保证绕过系统代理或 VPN。用户应先预览实际检测结果，修复后的本机联网可用性待用户复测。
+- Date: 2026-09-22. Status: implemented.
+- Compare Text in Toolbox and Convert Video in Toolbox, with persisted inbox routing. Finder Services/Quick Actions instead of a standalone Finder Sync target. Local service registration can depend on installation/session state.
+
+## DEC-016 — Local Favorites
+
+- Date: 2026-09-22. Status: implemented.
+- Sidebar stars/top group backed by UserDefaults. No sync/account/homepage.
+
+## DEC-017 — Per-record DDNS address source
+
+- Date: 2026-09-23. Status: implemented.
+- A/AAAA independently choose public lookup or interface name. Reread addresses; IPv6 system flags reject temporary/deprecated/not-ready candidates; filter non-public scopes.
+- Multiple eligible addresses require explicit selection. Interface/address loss fails visibly, without silent fallback. Configuration remains editable before enabling the record.
+
+## DEC-018 — User-selectable IPv4 echo service
+
+- Date: 2026-09-23. Status: implemented, real app retest pending.
+- IPv4 can use documented ip.czl.net HTTPS API, ipify, or interface; only suitable choices appear for IPv6.
+- Preview/update share the selected source and validation. CZL uses system curl --ipv4 because its API reports the actual connection family. No silent source fallback. This cannot guarantee bypassing VPN/proxy routing.

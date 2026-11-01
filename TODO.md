@@ -1,168 +1,141 @@
 # TODO
 
-本文件是项目需求与执行状态的唯一事实来源。除非用户明确选择，所有新功能都停留在候选状态。
+This is the source of truth for requirements and execution status. Unselected ideas remain candidates. States: Candidate, Selected, In progress, Blocked, Completed. Completion refers to stated implementation and checks, with outstanding acceptance limits retained below.
 
-## 状态说明
+## Current milestone
 
-- `[候选]`：已记录，尚未确认进入开发
-- `[已选定]`：用户已指定为下一项，需要补全范围或准备实施
-- `[进行中]`：正在开发
-- `[受阻]`：存在明确阻塞条件
-- `[已完成]`：已经实现并完成相应验证
+The multi-tool local MVP is implemented. The first public source repository and v0.1.0 preview DMG are being prepared.
 
-## 当前里程碑
+### REL-001 — Public GitHub repository and DMG — In progress
 
-多工具本地 MVP 已完成：视频转换、Text Diff、UUID / Random String、Password Tools、Network Tools、Clipboard History、Sleep Prevention、Favorites、Finder Services 与 Cloudflare DDNS 均已集成并通过构建及核心路径验证。
+- Authorized 2026-11-01: create a public open-source GitHub project and publish a DMG. Intended repository: raycalrui/Toolbox; release: v0.1.0 preview. User selected MIT; retain OpenCC attribution/license.
+- Public repository raycalrui/Toolbox created. Universal Release app and approximately 4 MB DMG built with scripts/build-dmg.sh. Outputs: dist/Toolbox-0.1.0.dmg and dist/SHA256SUMS.
+- Recorded verification: Developer ID signatures on app/DMG; mounted DMG contents; icon, OpenCC dictionaries, and license notices present; 24 subtitle checks and recording queue batch/naming/protection/skip/cancel/retry/cleanup/failure checks passed. Release upload/public download verification remain pending.
+- Developer ID certificate available; no usable notarytool Keychain profile found. Notarization remains incomplete. Signing is not notarization.
+- Acceptance: source/history privacy review, third-party notices, relevant existing checks, architectures/signature/icon/dictionaries, DMG contents/checksum, reviewed-source push, and verified published assets.
+- The releasing agent must record actual final results and publication before marking complete.
 
-工程基础设施已经完成：本地 Git 仓库和最小 macOS SwiftUI Xcode 工程已建立。
+## Creative and video
 
-## 候选需求
+### VID-001 — Video Converter — Completed
 
-### 视频与创作
+- Batch select/drop, metadata, MP4/MOV, VideoToolbox H.264/HEVC/ProRes 422, AAC/PCM, resolution/frame rate/bitrate/audio controls, estimated size, and built-in/custom presets.
+- Independent per-file settings; editable base name with parameter suffix, e.g. name_4K60_H265_40M.mp4. Completed items are skipped; completed/cancelled/failed items are removable.
+- Percentage, elapsed time, live FPS, ETA, cancel/retry/Finder reveal. Resolution/frame-rate menus start with Keep Original and end with Custom.
+- Recorded verification: Debug build, three hardware codecs, actual 3840×2160/60 fps HEVC output, per-item independence, preset/UI/resizing checks, and cancellation/removal.
 
-- **VID-001 `[已完成]` 视频格式转换本地 MVP**
-  - 支持选择输入视频和导出格式。
-  - 可自定义分辨率、帧率、码率和编码器。
-  - 支持保存、选择、编辑和删除导出预设。
-  - 本轮改进：进度显示百分比、实际用时和实时转换帧率；输出基础文件名可编辑，并按分辨率、帧率、编码和码率自动生成参数后缀；分辨率与帧率改为常用预设下拉选单，并保留自定义输入。
-  - 已完成改进：每个视频独立保存导出参数，右侧编辑当前选中视频；完成项目不重复转换；取消、失败和完成状态可删除；转换中显示预计剩余时间。
-  - 已确认：SwiftUI / AVFoundation 负责原生界面和媒体信息，FFmpeg 负责转换，并通过 VideoToolbox 硬件编码。
-  - MVP 范围：MP4 / MOV，H.264 / HEVC / ProRes 422，AAC / PCM，批量队列，自定义分辨率、帧率和码率，导出预设、进度、取消与 Finder 定位。
-  - 使用用户通过 Homebrew 安装的 FFmpeg，不在 App 内嵌 FFmpeg。
-  - 验证：Debug 构建成功；H.264、HEVC、ProRes 三条 VideoToolbox 转码命令成功；App 界面完成端到端转换；三栏宽度、英文文案和设置面板显隐完成界面检查；新增预设选单及 Custom 输入已检查；实际生成 `demo_4K60_H265_40M.mp4`，并由 ffprobe 确认为 3840×2160、60 fps、HEVC；两条视频分别保持 H.264/12 Mbps 与 HEVC/8 Mbps；完成后再次启动只重试取消项；长视频转换中显示百分比、用时、实时 fps 和预计剩余时间；取消后仍可删除。
+### VID-002 — FFmpeg dependency guidance — Completed
 
-- **VID-002 `[已完成]` FFmpeg 依赖检测与安装引导**
-  - 启动视频工具时检测 Homebrew FFmpeg 是否可用。
-  - 未安装时显示清晰说明，并提供可复制的 `brew install ffmpeg` 命令。
-  - 区分未安装 Homebrew 与仅缺少 FFmpeg 的情况，不由 App 自动执行安装。
-  - 提供重新检测入口，安装完成后无需重启 App 即可继续使用。
-  - 验证：Homebrew 与 FFmpeg 路径检测、安装命令复制、brew.sh 入口和 Check Again 已完成构建验证；存在 FFmpeg 时保持 Ready 状态。
+- Detect external Homebrew FFmpeg; distinguish missing Homebrew/FFmpeg, copy install commands, link brew.sh, and Check Again without restart. Never install automatically.
+- Recorded path, ready-state, guidance, and build verification passed.
 
-### 文本与开发
+### VID-003 — Recording Fix — Completed
 
-- **TXT-001 `[已完成]` 文本差异对比**
-  - 对比两段文本并标示增加、删除和修改内容。
-  - 已实现逐行 / 逐词、并排 / 统一视图、新增 / 删除 / 修改及行内词语高亮。
-  - 支持分别拖入 5 MB 以内 UTF-8 文本文件，并复制统一格式结果。
-  - 验证：界面输入与模式切换检查通过；行修改、相同行和新增行核心结果测试通过；编辑器与结果分割区在宽窗口和窗口缩放时占满可用宽度，上下中央分隔线保持一致。
+- Separate batch-MOV queue retaining the user pipeline: -hwaccel videotoolbox -vf fps=60 -c:v hevc_videotoolbox -tag:v hvc1 -c:a copy.
+- Fixed 60 fps; original resolution and default quality/track behavior. No bitrate/quality overrides. Default adjacent _60fps_h265.mov; optional shared folder; collision numbering; preserve originals.
+- Progress/elapsed/FPS/ETA, cancel/retry/reveal, skip completed items, and independent queues retained across tool switches.
+- Recorded verification: exact command, 3-second VFR intervals 1/30 and 1/20 converted into 180 constant 1/60-second frames; HEVC/hvc1, 640×360 unchanged, identical AAC packet SHA-256. Queue tests covered collisions, source/existing-output protection, skipping, cancel/retry, temporary cleanup, and failed-item removal. App sample conversion and switching passed.
+- Outstanding: real QuickTime-to-DaVinci acceptance. No VFR detection or guarantee of retaining every track.
 
-- **DEV-001 `[已完成]` UUID / 随机字符串生成**
-  - 生成 UUID 和自定义长度的随机字符串。
-  - 已实现 UUID v4、随机字符串长度 / 字符组 / 批量数量和单项 / 全部复制。
-  - 验证：100 个安全随机 UUID 均符合 v4 版本位；Debug 构建与界面生成检查通过。
+### SUB-001 — SRT to Taiwan Traditional Chinese — Completed
 
-### 网络
+- Offline character/regional-terminology conversion using OpenCC 1.1.9 s2twp dictionary stages and an independent Swift longest-match engine.
+- Open/drop one SRT up to 5 MB, read-only previews, copy, save _zh-TW.srt; protect source including symlinks/equivalent identities.
+- Preserve cues/timing/line endings/tags/attributes/entities and UTF-8/BOM UTF-8/BOM UTF-16 LE/BE; reject malformed/unsupported input.
+- Recorded: Debug build, 24 core terminology/structure/markup/encoding/error checks, 10,000 cues about 0.73 seconds, app open/preview, and save default name. Final Save click/drop UI acceptance remains outstanding.
+- No cross-line/tag phrase merging, semantic translation, or exact C++ runtime equivalence. Review names/ambiguity manually.
 
-- **NET-001 `[已完成]` 公网 IP、局域网 IP 查看**
-  - 展示本机局域网地址以及公网 IPv4 / IPv6。
-  - 展示活动接口的 IPv4 / IPv6；公网地址由用户点击 Refresh 后分别通过 ipify IPv4 / IPv6 HTTPS 端点查询。
-  - 查询结果不持久化，界面明确标示第三方服务。
+## Text and development
 
-- **NET-002 `[已完成]` Ping 测试**
-  - 输入主机名或 IP 后展示延迟、丢包和基本统计。
-  - 使用系统 `/sbin/ping` / `/sbin/ping6` 执行四包测试，支持 IPv4 / IPv6、输出统计和取消。
-  - 严格验证主机名与地址，并使用 Process 参数数组避免 Shell 注入。
+### TXT-001 — Text Diff — Completed
 
-- **NET-003 `[已完成]` IPv4 / IPv6 信息解析**
-  - 解析地址类型、规范化形式、网段及相关信息。
-  - 已实现 IPv4 / IPv6 规范化、CIDR 前缀、网络地址、范围、地址数量和常见作用域识别。
-  - 验证：IPv4 `/24`、IPv6 `/64`、私有 / 文档地址作用域及非法输入测试通过。
+- Two editors; line/word, side-by-side/unified, added/deleted/modified and inline highlighting; UTF-8 drops up to 5 MB; unified-result copy.
+- Core results and UI switching verified. Editors/results fill resized windows and central dividers align.
 
-- **NET-004 `[已完成]` Cloudflare IPv4 / IPv6 DDNS**
-  - 连接 Cloudflare，根据当前公网地址更新指定 DNS 记录。
-  - 同时考虑 IPv4 A 记录与 IPv6 AAAA 记录。
-  - 凭据必须存放于 macOS Keychain，不进入日志或普通配置。
-  - API Token 仅保存在 macOS Keychain；Zone ID、记录名称、Record ID 和非敏感设置保存在本机。
-  - A / AAAA 可独立启用，分别通过 ipify 获取并校验公网地址，再调用 Cloudflare PATCH API 更新记录。
-  - 支持手动更新、5 / 15 / 30 / 60 分钟定时、Proxy 开关、协议级状态和错误信息。
-  - 自动更新仅在 Toolbox 运行期间生效；退出 App 后持续运行的登录项辅助进程不属于本轮 MVP。
-  - 验证：Swift 6 Debug 构建通过，Keychain 和 Cloudflare 响应处理完成静态检查；未使用真实用户凭据执行外部 DNS 写入。
+### DEV-001 — UUID and Random String — Completed
 
-- **NET-005 `[已完成]` DDNS 地址来源选择**
-  - A / AAAA 记录分别选择公网检测或本机指定网络接口；IPv4 默认沿用公网检测，IPv6 可选择 `en0` 等接口。
-  - 接口模式保存接口名称；每次手动或定时更新时重新读取所选接口地址，不持久化单一候选时的旧 IP。
-  - IPv6 接口模式使用逐地址系统标记排除临时、弃用、未就绪地址，并过滤链路本地、ULA、回环等非公网地址；IPv4 接口模式也过滤常见非公网地址。
-  - 同一接口有多个合格地址时要求明确选择；所选地址不再存在、接口不可用或无合格地址时显示错误，不静默改用其他来源。
-  - 页面显示当前本地接口候选地址及来源；公网来源可先点击 Check IP 预览，真正更新时仍重新检测，状态区显示实际成功写入的地址。
-  - 界面修复：记录未启用时也能先选择来源、网络接口并填写记录信息；启用开关仅控制该记录是否参与更新。
-  - 验证：模拟服务覆盖公网 IPv4、稳定 `en0` IPv6、临时/ULA 排除、多地址显式选择与旧配置迁移；本机 IPv6 标记查询成功；Debug 构建通过。未使用真实凭据改动 Cloudflare DNS。
+- Secure UUID v4, string length/character groups/batches, individual/all copy. Recorded 100 correct v4 UUIDs, build, and UI-generation checks.
 
-- **NET-006 `[受阻]` 国内公网 IPv4 检测来源**
-  - A 记录的 Address source 已增加 `ip.czl.net` HTTPS API 选项，保留原有 ipify 和本机接口；AAAA 记录仍只显示适用来源。旧配置仍默认 ipify。
-  - Check IP 与实际 DDNS 更新使用同一选定来源；切换来源时清除旧预览。服务响应必须包含成功代码、IPv4 标记和合法 IPv4 地址；失败时不静默回退到 ipify，也不更新该记录。
-  - 本机实测：ipify 默认网络路径和直连路径均返回有效且相同的 IPv4；`4.ipw.cn` HTTPS 握手失败、HTTP 未返回有效内容，且官方仅允许个人测试学习，因此未加入选单。
-  - 用户在 App 内首次 Check IP 收到笼统的无效 IPv4 提示。官方文档表明 `/api/query` 按请求实际使用的地址族返回结果，因此可能是双栈连接选到 IPv6，也可能是服务错误；旧提示无法区分。
-  - 修复：ip.czl.net 查询改用 macOS 自带 `curl --ipv4` 强制 IPv4 连接；服务错误码、非 JSON、无地址及仍返回 IPv6 分别显示英文错误。修复版 Debug 构建通过，尚待用户在 App 内复测。自动权限审核仍未允许 Agent 直接向 `ip.czl.net` 请求。
-  - 更换域名或强制 IPv4 连接不能保证绕过系统代理或全局 VPN/TUN，更新前应核对 Check IP 结果。
+## Network
 
-### 隐私与安全
+### NET-001 — Local/public IP — Completed
 
-- **SEC-001 `[已完成]` 随机密码与强密码生成**
-  - 自定义长度以及大小写字母、数字和符号组合。
-  - 已实现长度、字符组、批量生成、单项 / 全部复制和排除易混淆字符。
-  - 使用 `SecRandomCopyBytes` 和无模偏差选择，并保证每个已选字符组至少出现一次。
+- Show interfaces/IPv4/IPv6; public ipify queries only on explicit Refresh, provider identified, results not persisted.
 
-- **SEC-002 `[已完成]` 密码强度检查**
-  - 在本地评估密码强度并给出可理解的改进提示。
-  - 不保存或上传用户输入。
-  - 已实现基于长度、字符池、常见密码、重复和序列模式的本地评估与改进建议。
-  - 验证：常见弱密码与安全随机强密码分级测试通过；输入仅保存在当前 SwiftUI 状态，不持久化。
+### NET-002 — Ping — Completed
 
-### 系统与效率
+- Four-packet IPv4/IPv6 system ping/ping6, statistics/output/cancel, strict host validation, Process argument arrays rather than shell interpolation.
 
-- **SYS-001 `[已完成]` 剪贴板历史**
-  - 记录并搜索近期文本与图片剪贴板内容，图片在列表中显示缩略图、尺寸和文件大小。
-  - 支持 PNG / TIFF / JPEG 剪贴板数据及从 Finder 复制的图片文件，并可将历史图片再次复制到剪贴板。
-  - 支持搜索、复制、删除、固定、暂停记录、清除未固定项目或全部清除。
-  - 支持 25 / 50 / 100 / 250 条上限，以及 1 天 / 1 周 / 1 月 / 永久保存期限；默认 100 条和 1 周。
-  - 文本与元数据保存在 UserDefaults，图片统一转换为 PNG 后保存在本机 App Support；删除、清除和自动淘汰会同步移除图片文件，单张上限 20 MB。
-  - 忽略空白、重复及带 Concealed / Transient 标记的剪贴板内容。
-  - 已知边界：第三方 App 若把密码作为无敏感标记的普通文本写入剪贴板，macOS 无法可靠识别其来源。
+### NET-003 — IP/CIDR parsing — Completed
 
-- **SYS-002 `[已完成]` 睡眠阻止开关**
-  - 临时阻止 Mac 自动睡眠，并明确显示启用状态。
-  - 支持阻止系统睡眠或阻止显示器睡眠，使用 macOS IOPMAssertion 公共 API。
-  - 支持 30 分钟、1 小时、2 小时和持续开启，显示活动状态与秒级倒计时。
-  - 停用、到期或 controller 销毁时释放 assertion；菜单栏入口不属于本轮 MVP。
+- Normalize IPv4/IPv6, prefixes, network/range/count/scope. Recorded /24, /64, private/documentation scope, and invalid-input checks.
 
-- **UX-001 `[已完成]` 收藏常用工具**
-  - 收藏、取消收藏并快速访问常用工具。
-  - 每个侧边栏工具提供星标按钮与右键菜单，收藏项目显示在顶部 Favorites 区域。
-  - 收藏列表保存到本机 UserDefaults，不进行云同步；独立首页和拖动排序不属于本轮 MVP。
+### NET-004 — Cloudflare DDNS — Completed
 
-- **UX-002 `[已完成]` App 图标设计与暂定稿接入**
-  - 已生成四款独立候选：多功能模块、抽象工具匣、模块化 T、橙色工具箱，保存在 `Design/IconCandidates/`。
-  - 用户偏好橙色工具箱的深色圆角底板、扁平正视图与简洁轮廓；据此新增长槽、单扣、双格及扳手镂空四款同系列变体。
-  - 用户已暂定采用最新一轮第一张「米白背景＋橙色镂空手柄扳手」（B），保留之前候选；已制作 macOS 图标尺寸并接入 Xcode AppIcon。
-  - 验收：16–1024 px 资源完整、构建产物包含 AppIcon、检查小尺寸呈现；不修改业务功能，不发布。
-  - 验证：Debug 构建成功，产物包含 AppIcon.icns 且 CFBundleIconFile 为 AppIcon；32px/128px 导出图人工检查通过。未重启用户现有 App，运行中 Dock 刷新尚未验证。
-  - 2026-10-01：用户报告运行后无图标。确认 Xcode 产物已包含正确图标与配置；增加启动时显式设置 applicationIconImage。修复版 Debug 构建成功，并运行后通过 NSRunningApplication 读取到所选橙色扳手图标；Dock 截图读取超时，未声称截图验收通过。
-  - 2026-10-01：用户改选创意重做一轮的第二张「橙色折纸工具匣」作为当前暂定图标；正式 Apple 规范制作另列 UX-003。
+- Keychain token, non-sensitive local settings, independent A/AAAA PATCH updates, manual or 5/15/30/60-minute schedules, proxy and protocol-level errors/status.
+- Only while app runs; no login helper. Swift 6 build and static Keychain/API review passed. No real user-credential DNS mutation was performed in validation.
 
-- **UX-003 `[候选]` 正式 Apple 规范图标制作**
-  - 当前暂用用户选定的第二张「橙色折纸工具匣」，原图为 Design/AppIcon/selected-origami.png；已有 AppIcon 暂时使用传统 PNG 资源。
-  - 后续使用专门设计 App 重建可编辑图形，并在 Apple Icon Composer 中制作背景/前景分层，按官方模板校准尺寸、圆角与安全区。
-  - 验收：检查默认、深色及系统支持的其他外观；Dock 与 Finder/Safari 并排检查尺寸和视觉重量；验证最低支持系统上的回退图标。
-  - 本轮只应用暂定稿并记录待办，不将正式规范制作标为完成。
+### NET-005 — DDNS source/interface selection — Completed
 
-- **SYS-003 `[已完成]` Finder 右键入口**
-  - 从 Finder 对选中文件调用适用的工具。
-  - 通过 macOS NSServices 提供 `Compare Text in Toolbox` 与 `Convert Video in Toolbox`。
-  - 文本动作接收最多两个文本文件并路由到 Text Diff；视频动作接收多个视频并路由到 Video Converter。
-  - 入口通常显示于 Finder 右键菜单的 Services，部分系统版本可能归类到 Quick Actions。
-  - 本地未签名构建需要先运行或安装 App，并可能需要刷新系统服务注册或重新登录；独立 Finder Sync Extension Target 不属于本轮 MVP。
+- Independent public or named-interface source; reread current addresses each update. IPv6 excludes temporary/deprecated/not-ready and unsuitable addresses; IPv4 filters common non-public ranges.
+- Multiple eligible addresses require explicit selection. Missing/changed selected addresses or interfaces stop that update without silent fallback.
+- Source/interface settings editable before enabling records. Check IP previews; actual update rechecks.
+- Recorded simulated public IPv4/stable en0 IPv6/temporary-ULA exclusion/multiple-address/migration checks; local IPv6 flags and Debug build passed. No external DNS write.
 
-## 暂不执行
+### NET-006 — China-region IPv4 service — Blocked: app retest pending
 
-- 配置开发者签名、发布渠道或外部服务。
-- 为 DDNS 增加退出 App 后仍运行的登录项辅助进程。
-- 将 Finder Services 改为独立 Finder Sync Extension，或增加菜单栏常驻入口。
+- IPv4 menu includes ip.czl.net alongside ipify/interfaces. IPv6 lists suitable sources only. Preview/update share source; changes clear preview; failures never silently fall back or update that record.
+- Initial result was a generic invalid-IPv4 error. Revised lookup uses system curl --ipv4 and separate service/non-JSON/missing-address/wrong-family errors. Build passed; revised live app retest pending.
+- Earlier ipify checks returned valid IPv4; 4.ipw.cn was omitted after failed local requests and its documented personal-testing restriction. No successful live agent-side CZL check is claimed.
+- Endpoint changes/forced IPv4 cannot guarantee bypassing proxies or VPN/TUN; verify previews.
 
-## 文档维护清单
+## Privacy and system
 
-每次需求或代码发生变化时检查：
+### SEC-001 — Strong password generation — Completed
 
-- [x] `TODO.md` 中的状态和验收条件是否准确
-- [x] `README.md` 是否仍与当前产品状态一致
-- [x] 是否产生需要写入 `DECISIONS.md` 的长期决策
-- [x] 是否有已交付变化需要写入 `CHANGELOG.md`
+- Length/groups/batches, individual/all copy, ambiguous-character exclusion. SecRandomCopyBytes, unbiased sampling, at least one character per selected group.
+
+### SEC-002 — Offline strength check — Completed
+
+- Length/pool/common-password/repetition/sequence estimates and suggestions; no input saving/upload. Recorded weak/random-password checks passed; view-local input.
+
+### SYS-001 — Clipboard History — Completed
+
+- Text and PNG/TIFF/JPEG/Finder-copied images, thumbnails/dimensions/size, recopy, search/pin/delete/pause/clear.
+- 25/50/100/250 entries; day/week/month/forever; defaults 100 and one week. UserDefaults text/metadata, Application Support PNGs up to 20 MB; deletion/expiry removes files.
+- Skip empty/repeated/concealed/transient items. Unmarked text cannot reliably be identified as passwords.
+
+### SYS-002 — Sleep Prevention — Completed
+
+- Public IOPMAssertion system/display modes; 30 minutes/one hour/two hours/indefinite; countdown. Release on disable/expiry/controller destruction. No menu-bar entry.
+
+### SYS-003 — Finder Services — Completed
+
+- NSServices Compare Text in Toolbox (up to two files) and Convert Video in Toolbox (multiple videos), with persisted inbox routing.
+- Finder Services/possibly Quick Actions, not Finder Sync. Installation/launch/new-session registration may be required.
+
+### UX-001 — Favorites — Completed
+
+- Sidebar stars/context menu/top Favorites; local UserDefaults, no cloud sync/homepage/drag sorting.
+
+### UX-002 — Provisional icon integration — Completed
+
+- Earlier candidates retained. Current selected image: Design/AppIcon/selected-origami.png; reproducible 16–1024 px assets.
+- Recorded build/packaging and 32/128 px inspection passed. Startup explicitly loads bundled AppIcon following reports of a generic running icon. Runtime icon read succeeded; Dock screenshot timed out, so screenshot acceptance is not claimed.
+- Origami selected 2026-10-01, replacing provisional wrench.
+
+### UX-003 — Formal Apple icon production — Candidate
+
+- Rebuild editable geometry in dedicated design software and Apple Icon Composer layers, using current templates/safe areas/system masking.
+- Acceptance: default/dark/other supported appearances, real Dock size/visual-weight comparison beside Finder/Safari, and fallback on minimum macOS.
+- Current raster is provisional, not completed formal icon acceptance.
+
+## Outside current scope
+
+- DDNS login helper that survives app exit.
+- Independent Finder Sync extension or menu-bar entry.
+- Unselected features. Public source/DMG distribution is explicitly authorized in REL-001.
+
+## Documentation checks
+
+Keep states and evidence accurate; update README/decisions/changelog together. Distinguish implementation, build, UI acceptance, signing, notarization, and publication.

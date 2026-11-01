@@ -5,6 +5,8 @@ struct ContentView: View {
     @StateObject private var clipboardStore = ClipboardHistoryStore()
     @StateObject private var sleepController = SleepPreventionController()
     @StateObject private var ddnsModel = CloudflareDDNSViewModel()
+    @StateObject private var videoModel = VideoConverterViewModel()
+    @StateObject private var recordingModel = VideoConverterViewModel(mode: .recordingFix)
     @State private var selectedTool: ToolboxTool = .videoConverter
     @State private var favoriteTools = ToolFavorites.load()
     @State private var activeFinderAction: FinderPendingAction?
@@ -34,14 +36,19 @@ struct ContentView: View {
         switch selectedTool {
         case .videoConverter:
             VideoConverterView(
+                model: videoModel,
                 finderAction: activeFinderAction?.kind == .convertVideo ? activeFinderAction : nil,
                 onFinderActionHandled: finishFinderAction
             )
+        case .recordingFix:
+            VideoConverterView(model: recordingModel)
         case .textDiff:
             TextDiffView(
                 finderAction: activeFinderAction?.kind == .compareText ? activeFinderAction : nil,
                 onFinderActionHandled: finishFinderAction
             )
+        case .subtitleConverter:
+            SubtitleConverterView()
         case .uuidGenerator:
             UUIDRandomGeneratorView()
         case .passwordTools:
@@ -72,6 +79,8 @@ struct ContentView: View {
 
 enum ToolboxTool: String, CaseIterable, Identifiable, Hashable {
     case videoConverter
+    case recordingFix
+    case subtitleConverter
     case textDiff
     case uuidGenerator
     case passwordTools
@@ -85,6 +94,8 @@ enum ToolboxTool: String, CaseIterable, Identifiable, Hashable {
     var title: String {
         switch self {
         case .videoConverter: "Video Converter"
+        case .recordingFix: "Recording Fix"
+        case .subtitleConverter: "SRT Converter"
         case .textDiff: "Text Diff"
         case .uuidGenerator: "UUID & Random"
         case .passwordTools: "Password Tools"
@@ -98,6 +109,8 @@ enum ToolboxTool: String, CaseIterable, Identifiable, Hashable {
     var icon: String {
         switch self {
         case .videoConverter: "film.stack"
+        case .recordingFix: "record.circle"
+        case .subtitleConverter: "captions.bubble"
         case .textDiff: "arrow.left.arrow.right"
         case .uuidGenerator: "number"
         case .passwordTools: "key.horizontal"
@@ -110,7 +123,7 @@ enum ToolboxTool: String, CaseIterable, Identifiable, Hashable {
 
     var category: ToolCategory {
         switch self {
-        case .videoConverter: .creative
+        case .videoConverter, .recordingFix, .subtitleConverter: .creative
         case .textDiff, .uuidGenerator: .developer
         case .passwordTools: .security
         case .networkTools: .network

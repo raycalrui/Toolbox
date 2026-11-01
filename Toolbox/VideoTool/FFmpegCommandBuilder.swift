@@ -1,6 +1,16 @@
 import Foundation
 
 struct FFmpegCommandBuilder {
+    static func recordingFixArguments(input: URL, output: URL) -> [String] {
+        [
+            "-hide_banner", "-n", "-nostdin",
+            "-hwaccel", "videotoolbox", "-i", input.path,
+            "-vf", "fps=60", "-c:v", "hevc_videotoolbox",
+            "-tag:v", "hvc1", "-c:a", "copy",
+            "-progress", "pipe:1", "-nostats", output.path
+        ]
+    }
+
     static func arguments(
         input: URL,
         output: URL,

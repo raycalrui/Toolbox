@@ -1,59 +1,40 @@
 # AGENTS.md
 
-本文件约束所有在本项目中工作的 Agent。除非用户明确覆盖，必须遵守以下规则。
+These rules apply to agents working in this repository unless the user explicitly overrides them.
 
-## 项目定位
+## Product and language
 
-- 项目暂定名为 `Toolbox`。
-- 目标是开发一款以 macOS 为首要平台的原生工具箱 App。
-- 默认技术方向为 SwiftUI；涉及系统能力时可以使用 AppKit 和系统扩展。
-- 已创建最小 macOS SwiftUI Xcode 工程。用户明确指定优先功能前，只维护工程骨架和项目文档，不实现候选功能。
+- Toolbox is a native macOS utility app using SwiftUI, AppKit, and public system APIs.
+- Use English for UI, messages, filenames, README, and project documentation. Communicate with Raycal in Simplified Chinese by default.
+- Implement only selected work. Unselected ideas remain candidates in TODO.md.
 
-## 开始工作前
+## Before changes
 
-1. 完整阅读本文件。
-2. 阅读 `README.md`、`TODO.md`、`DECISIONS.md` 和 `CHANGELOG.md`。
-3. 检查 Git 状态、当前文件和已有实现，不覆盖用户的未提交修改。
-4. 只处理用户本次明确指定的功能或范围。
+1. Read this file completely, then README.md, TODO.md, DECISIONS.md, and CHANGELOG.md.
+2. Inspect Git status, affected files, and actual behavior. Preserve unrelated uncommitted work.
+3. Establish scope, dependencies, risk, and acceptance criteria. Ask when a missing choice materially changes the result.
 
-## 需求与实施流程
+## Work and documentation
 
-- 用户提出新想法但未要求实现时，只把它加入 `TODO.md` 的“候选需求”，不得擅自开始开发。
-- 用户明确选择某项作为下一步时，先补全该需求的范围、验收标准、依赖和风险；如果缺少会实质改变结果的选择，再向用户确认。
-- 开始实施时，将对应任务从“候选”改为“已选定”或“进行中”。
-- 完成实施并验证后，才可标记为“已完成”。
-- 不因为某项容易实现，就绕过用户指定的优先顺序。
+- Track Candidate, Selected, In progress, Blocked, and Completed states in TODO.md. Mark complete after implementation and proportionate verification.
+- Update README for capabilities/limitations, DECISIONS for lasting decisions, and CHANGELOG for implemented user-visible changes.
+- Describe current facts. Do not equate plans, implementation, build success, UI acceptance, signing, notarization, or publication.
+- Prefer minimal changes, preserve modules and compatibility, and avoid unsolicited refactors, stack replacements, dependencies, or feature removal.
+- Validate relevant success/failure paths. Inspect realistic rendering for visual defects rather than relying only on a build.
+- Delegate independent workflows when useful; the main agent integrates and verifies results.
 
-## 文档自维护规则
+## Privacy and system integration
 
-每次产生有效变更时，必须同步维护相关文档：
+- Prefer local processing; upload user data only when required and authorized.
+- Keep Cloudflare tokens in Keychain, never source, logs, fixtures, or ordinary settings.
+- Request permissions as needed and explain their use. Clipboard history needs explicit retention, exclusion, and deletion behavior.
+- Password generation/checks stay offline and do not persist input.
+- Use public APIs for Finder, power assertions, and background tasks; expose running state.
+- Protect source media and prevent unintended output overwrites.
 
-- `README.md`：更新当前产品定位、已实现能力、运行方式和项目状态。
-- `TODO.md`：记录新需求，更新任务状态、验收标准、依赖和验证结果。
-- `DECISIONS.md`：记录会长期影响架构、产品行为或兼容性的决策及理由。
-- `CHANGELOG.md`：只记录已经完成、用户可感知的功能和重要修复；规划中的功能不得写入发布记录。
+## Git and distribution
 
-文档应反映当前事实，不得把规划描述成已完成状态。代码与文档发生冲突时，先核实现状，再修正文档。
-
-## 开发原则
-
-- 优先本地处理，除明确需要联网的功能外，不上传用户数据。
-- 权限按需申请，明确解释剪贴板、网络、Finder 扩展等权限用途。
-- 工具应模块化，避免一个工具的状态或依赖影响其他工具。
-- 优先最小可用实现，不为未来可能性提前引入复杂架构。
-- 保持现有功能、设计和数据兼容；高影响迁移必须先获得用户确认。
-- 验证范围与风险相称，至少覆盖修改功能的主要路径和失败路径。
-
-## 安全边界
-
-- Cloudflare DDNS 等外部服务凭据必须存入 macOS Keychain，不得写入仓库、日志或普通配置文件。
-- 剪贴板历史可能包含密码和隐私数据，设计前必须明确排除规则、保存期限和清除机制。
-- 密码生成与强度检查默认完全离线，不保存用户输入。
-- Finder 扩展、睡眠控制和后台任务应采用系统公开 API，并清晰展示运行状态。
-- 未经用户明确授权，不进行发布、签名、上传、部署或外部服务变更。
-
-## Git 与交付
-
-- 只修改和暂存本次任务涉及的文件。
-- 提交前检查 diff，并运行与改动直接相关的验证。
-- 提交不等于推送；除非用户明确要求，不执行推送或发布。
+- Stage only authorized paths/hunks; review staged diff and relevant verification before committing.
+- Commits do not imply push/publication authority. The first public GitHub repository and DMG release were authorized on 2026-11-01; external changes must remain in scope.
+- Exclude secrets, private configuration, signing credentials, build products, and personal data from Git.
+- Verify the exact distributed app/DMG; report build, signing, notarization, publication, and real-machine acceptance separately.

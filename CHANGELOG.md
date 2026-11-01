@@ -1,47 +1,40 @@
 # Changelog
 
-本文件只记录已经交付、用户可感知的产品变化。规划、候选需求和未完成工作统一记录在 `TODO.md`。
+Implemented user-visible changes only. Plans and unfinished acceptance belong in TODO.md.
 
 ## Unreleased
 
-- 暂定 App 图标改为米白背景的橙色折纸工具匣，保留旧稿；正式分层图标制作记录在 UX-003 待办。
+The first v0.1.0 preview release is being prepared. Public repository creation is complete; release asset upload and final public download verification are pending.
 
-- App 启动时显式加载随包 AppIcon，避免本地开发构建运行时沿用缓存的通用 Dock 图标；修复版构建与运行中系统图标读取验证通过。
+### Added
 
-- 接入暂定 App 图标：米白背景搭配橙色镂空手柄扳手；提供 macOS 16–1024 px 图标资源，并保留原图及可复现导出脚本。Debug 构建及图标打包验证通过。
+- Native macOS SwiftUI multi-tool app with an English interface, grouped sidebar, and local Favorites.
+- Video Converter: batch open/drop, media metadata, MP4/MOV, VideoToolbox H.264/HEVC/ProRes 422, AAC/PCM, independent per-file resolution/frame rate/bitrate/audio settings, presets, estimated size, progress percentage/elapsed/FPS/ETA, cancellation, and Finder reveal.
+- Editable output base names with selected parameter suffixes; completed items are skipped on subsequent starts and finished/cancelled/failed items remain removable.
+- External FFmpeg dependency guidance with Homebrew/FFmpeg distinction, copyable commands, brew.sh, and Check Again.
+- Recording Fix: separate batch-MOV queue using fixed constant 60 fps HEVC/hvc1 conversion and copied audio, with original quality defaults, output collision numbering, source protection, cancellation cleanup, and retained state across tool switches.
+- Offline SRT Converter using bundled OpenCC dictionaries: Simplified Chinese to Taiwan Traditional Chinese and regional terminology, original/result previews, copy/save, preserved timing/numbering/markup/line endings/encodings, and source overwrite protection.
+- Text Diff with line/word and side-by-side/unified views, highlighting, UTF-8 file drops, and copy.
+- Secure UUID v4/random-string batches and offline password generation/strength checks.
+- Network interfaces, public IPv4/IPv6 on demand, Ping, and IP/CIDR parsing.
+- Clipboard History for local text/images with thumbnails, search, pin/copy/delete/pause, retention/count controls, and sensitive-type exclusion.
+- System/display Sleep Prevention with durations and countdown.
+- Finder Services for selected text files and videos.
+- Cloudflare DDNS with Keychain tokens, independent A/AAAA, manual/app-running schedules, proxy control, per-record source/interface selection, previews, and protocol-specific errors.
+- Provisional orange origami utility-container AppIcon with original artwork and reproducible size exports.
+- First-release packaging script, MIT licensing and bundled third-party notices, English project documentation, and installation guidance.
 
-- 建立最小 macOS SwiftUI 工程骨架和本地开发配置。
-- 新增视频转换工具本地 MVP：
-  - 批量选择或拖放视频，并读取基础媒体信息。
-  - 支持 MP4 / MOV、H.264 / HEVC / ProRes 422、AAC / PCM。
-  - 支持自定义分辨率、帧率、码率和预计输出大小。
-  - 支持内置及自定义预设的保存、更新和删除。
-  - 支持转换进度、取消任务和在 Finder 中显示结果。
-  - 通过 FFmpeg 调用 Apple VideoToolbox 硬件编码。
-- 修复三栏界面宽度失控导致的侧边栏内容消失、参数面板横向溢出和完成进度条残留问题。
-- 将 App 的工具名称、操作、状态、预设和错误提示统一为英文界面。
-- 改进视频转换任务信息和导出控制：
-  - 进度条显示百分比，并显示实际用时和 FFmpeg 实时转换帧率。
-  - 输出基础名称可编辑，文件名自动追加分辨率、帧率、编码和码率参数。
-  - 分辨率与帧率改为常用预设下拉选单，首项为保持原始，末项支持自定义输入。
-  - 每个视频独立保存导出参数，右侧设置只影响当前选中项目。
-  - 转换中增加预计剩余时间显示。
-  - 再次开始时跳过已完成项目，只处理就绪、失败或已取消项目。
-  - 已完成、失败和取消的项目均保留队列移除操作。
-- 新增 FFmpeg 依赖引导：区分 Homebrew / FFmpeg 缺失，提供安装命令复制、brew.sh 入口和重新检测。
-- 新增分组工具侧边栏，并加入以下本地工具：
-  - Text Diff：逐行 / 逐词、并排 / 统一差异、高亮、文件拖入与结果复制。
-  - UUID & Random String：安全随机 UUID v4、自定义字符串和批量复制。
-  - Password Tools：安全密码生成、易混淆字符排除和完全离线的强度检查。
-  - Network Tools：本地 / 公网 IPv4 与 IPv6、Ping 和 IP/CIDR 解析。
-- 公网 IP 查询改为由用户主动刷新，并在界面标示 ipify.org 与不持久化策略。
-- 修复 Text Diff 编辑器与结果分割区未撑满窗口、Revised 面板被截断及工具栏标签换行的问题，并使上下区域的中央分隔线保持对齐。
-- 新增 Clipboard History：本地记录文本与图片剪贴板，支持图片缩略图、尺寸与大小信息、再次复制，以及搜索、固定、删除、暂停、保存期限、数量上限和清除操作；图片以 PNG 保存于 App Support，单张限制为 20 MB，并忽略常见敏感剪贴板标记。
-- 新增 Sleep Prevention：可阻止系统或显示器睡眠，支持 30 分钟、1 小时、2 小时和持续开启，并显示状态与倒计时。
-- 新增 Favorites：侧边栏工具可星标收藏，并在顶部 Favorites 区域快速访问。
-- 新增 Finder Services：可从 Finder 右键菜单将文本文件发送至 Text Diff，或将视频发送至 Video Converter。
-- 新增 Cloudflare DDNS：API Token 存入 Keychain，支持 A / AAAA 独立配置、手动或 App 运行期间定时更新、Proxy 选项及协议级状态。
-- Cloudflare DDNS 的 A / AAAA 记录现可各自选择公网检测或本机网络接口作为地址来源；公网地址可先预览，接口模式自动读取最新地址、过滤临时 IPv6，并在多地址或接口不可用时明确提示。
-- 修复 DDNS 记录未启用时地址来源和接口选单无法操作的问题；现在可先完成配置，再启用记录更新。
-- DDNS A 记录的来源选单新增 ip.czl.net HTTPS 回显服务；切换来源会清除旧 IP 预览，检测失败不会回退到其他服务或更新 DNS。该新服务尚未完成本机联网验证。
-- 修复 ip.czl.net 用于 A 记录时可能走 IPv6 的问题：现在强制通过 IPv4 连接，并区分服务报错、响应格式异常和地址族不匹配。修复后的联网结果仍待用户在 App 内确认。
+### Fixed
+
+- Video layout/sidebar/settings overflow and completed progress remnants.
+- Text Diff editor/result sizing and aligned upper/lower central dividers across window sizes.
+- Per-item export settings, completed-item skipping, and removal after cancellation.
+- DDNS source/interface configuration is available before a record is enabled.
+- CZL IPv4 queries force IPv4 and distinguish service/format/address-family failures. Revised live app retesting remains pending.
+- App startup explicitly loads the bundled icon following reports of a generic cached running icon.
+
+### Distribution status
+
+- Universal Release app and DMG have been built; Developer ID signatures for both were verified.
+- Apple notarization is not complete because a usable local notarytool Keychain profile is unavailable.
+- No public release upload or download verification is claimed yet. See REL-001.

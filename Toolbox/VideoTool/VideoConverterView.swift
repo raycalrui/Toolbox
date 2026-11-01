@@ -5,15 +5,17 @@ struct VideoConverterView: View {
     let finderAction: FinderPendingAction?
     let onFinderActionHandled: () -> Void
 
-    @StateObject private var model = VideoConverterViewModel()
+    @ObservedObject var model: VideoConverterViewModel
     @State private var presetName = ""
     @State private var showingPresetName = false
     @State private var isInspectorVisible = true
 
     init(
+        model: VideoConverterViewModel,
         finderAction: FinderPendingAction? = nil,
         onFinderActionHandled: @escaping () -> Void = {}
     ) {
+        self.model = model
         self.finderAction = finderAction
         self.onFinderActionHandled = onFinderActionHandled
     }
@@ -24,7 +26,7 @@ struct VideoConverterView: View {
                 mainPanel
                     .frame(minWidth: 500, maxWidth: .infinity, maxHeight: .infinity)
 
-                if isInspectorVisible {
+                if isInspectorVisible && !model.isRecordingFix {
                     Divider()
                     inspector
                         .frame(width: inspectorWidth(for: proxy.size.width))
@@ -71,6 +73,17 @@ struct VideoConverterView: View {
         VStack(spacing: 0) {
             header
             Divider()
+            if model.isRecordingFix {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("60 fps CFR · HEVC (H.265) · MOV · Original Resolution · Audio Copy")
+                        .font(.headline)
+                    Text("Prepare QuickTime recordings for editing. Uses your FFmpeg workflow with default encoder settings and no bitrate or quality overrides. Original files are never replaced.")
+                        .font(.callout).foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20).padding(.vertical, 14)
+                Divider()
+            }
             if !model.isFFmpegAvailable {
                 FFmpegDependencyBanner(
                     status: model.ffmpegDependencyStatus,
@@ -114,23 +127,29 @@ struct VideoConverterView: View {
     private var header: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Video Converter").font(.title2.bold())
+                Text(model.isRecordingFix ? "Recording Fix" : "Video Converter").font(.title2.bold())
                 Text(model.ffmpegStatus)
                     .font(.caption)
                     .foregroundStyle(model.isFFmpegAvailable ? Color.secondary : Color.red)
             }
             Spacer()
-            Button("Add Videos", systemImage: "plus", action: model.chooseVideos)
-            Button {
-                isInspectorVisible.toggle()
-            } label: {
-                Label(
-                    isInspectorVisible ? "Hide Export Settings" : "Show Export Settings",
-                    systemImage: "sidebar.right"
-                )
+            if model.importingCount > 0 {
+                ProgressView().controlSize(.small)
+                Text("Reading \(model.importingCount) files…").font(.caption)
             }
-            .labelStyle(.iconOnly)
-            .help(isInspectorVisible ? "Hide Export Settings" : "Show Export Settings")
+            Button(model.isRecordingFix ? "Add Recordings" : "Add Videos", systemImage: "plus", action: model.chooseVideos)
+            if !model.isRecordingFix {
+                Button {
+                    isInspectorVisible.toggle()
+                } label: {
+                    Label(
+                        isInspectorVisible ? "Hide Export Settings" : "Show Export Settings",
+                        systemImage: "sidebar.right"
+                    )
+                }
+                .labelStyle(.iconOnly)
+                .help(isInspectorVisible ? "Hide Export Settings" : "Show Export Settings")
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -140,11 +159,11 @@ struct VideoConverterView: View {
     private var fileArea: some View {
         if model.items.isEmpty {
             ContentUnavailableView {
-                Label("Add Videos to Convert", systemImage: "film.stack")
+                Label(model.isRecordingFix ? "Add QuickTime Recordings" : "Add Videos to Convert", systemImage: "film.stack")
             } description: {
-                Text("Drop videos here, or click Add Videos to select multiple files.")
+                Text(model.isRecordingFix ? "Drop MOV files here to convert them to a constant 60 fps." : "Drop videos here, or click Add Videos to select multiple files.")
             } actions: {
-                Button("Choose Videos", action: model.chooseVideos)
+                Button(model.isRecordingFix ? "Choose Recordings" : "Choose Videos", action: model.chooseVideos)
             }
             .contentShape(Rectangle())
             .onDrop(of: [.fileURL], isTargeted: nil, perform: model.add(providers:))
@@ -154,6 +173,7 @@ struct VideoConverterView: View {
                     VideoItemRow(
                         item: $item,
                         outputFileName: model.outputFileName(for: item),
+                        allowsRenaming: !model.isRecordingFix,
                         remove: { model.remove(item) },
                         reveal: { model.reveal(item) }
                     )
@@ -171,13 +191,20 @@ struct VideoConverterView: View {
         HStack(spacing: 12) {
             Button(action: model.chooseOutputDirectory) {
                 Label(
-                    model.outputDirectory?.lastPathComponent ?? "Choose Output Folder",
+                    model.outputDirectory?.lastPathComponent ?? (model.isRecordingFix ? "Next to Original Files" : "Choose Output Folder"),
                     systemImage: "folder"
                 )
                 .lineLimit(1)
             }
             .frame(maxWidth: 240, alignment: .leading)
-            .help(model.outputDirectory?.path(percentEncoded: false) ?? "Choose Output Folder")
+            .help(model.outputDirectory?.path(percentEncoded: false) ?? (model.isRecordingFix ? "Save each converted recording beside its original. Click to choose a shared output folder." : "Choose Output Folder"))
+            .disabled(model.isConverting)
+
+            if model.isRecordingFix, model.outputDirectory != nil {
+                Button("Reset", systemImage: "arrow.uturn.backward") { model.outputDirectory = nil }
+                    .help("Save next to each original file")
+                    .disabled(model.isConverting)
+            }
 
             Spacer()
 
@@ -192,7 +219,7 @@ struct VideoConverterView: View {
             } else {
                 Button("Start Conversion", systemImage: "play.fill", action: model.startConversion)
                     .buttonStyle(.borderedProminent)
-                    .disabled(!model.hasRunnableItems || model.outputDirectory == nil || !model.isFFmpegAvailable)
+                    .disabled(!model.canStartConversion)
             }
         }
         .padding(.horizontal, 20)
@@ -251,6 +278,7 @@ private struct FFmpegDependencyBanner: View {
 private struct VideoItemRow: View {
     @Binding var item: VideoItem
     let outputFileName: String
+    var allowsRenaming = true
     let remove: () -> Void
     let reveal: () -> Void
 
@@ -278,13 +306,15 @@ private struct VideoItemRow: View {
                 }
             }
 
-            HStack(spacing: 8) {
-                Text("Name")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                TextField("Output Name", text: $item.outputBaseName)
-                    .textFieldStyle(.roundedBorder)
-                    .disabled(item.status != .ready)
+            if allowsRenaming {
+                HStack(spacing: 8) {
+                    Text("Name")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField("Output Name", text: $item.outputBaseName)
+                        .textFieldStyle(.roundedBorder)
+                        .disabled(item.status != .ready)
+                }
             }
             Text("Output: \(outputFileName)")
                 .font(.caption.monospaced())
